@@ -1,0 +1,6 @@
+[submodule "eigen.git"]
+	path = eigen
+	url = https://gitlab.com/libeigen/eigen.git
+[submodule "mpreal.git"]
+	path = mpreal
+	url = https://github.com/advanpix/mpreal.git
