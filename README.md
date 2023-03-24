@@ -18,7 +18,8 @@ the [original](https://github.com/ZXGao97/VPMR) MATLAB implementation for more d
 
 ## How To Compile
 
-The following is based on Fedora.
+The following is based on Fedora. For Windows users, please use WSL.
+Native support is hard as porting dependencies to Windows is cumbersome.
 
 1. Install compiler, `cmake` and `git`.
    ```bash
