@@ -1,6 +1,8 @@
 # VPMR C++ Implementation
 
-## What Is This
+[![gplv3-or-later](https://www.gnu.org/graphics/gplv3-or-later.svg)](https://www.gnu.org/licenses/gpl-3.0.en.html)
+
+## What Is This?
 
 This is a C++ implementation of the VPMR algorithm to compute the approximation of arbitrary smooth kernel.
 
@@ -15,8 +17,12 @@ the [original](https://github.com/ZXGao97/VPMR) MATLAB implementation for more d
 4. [BigInt](https://github.com/faheel/BigInt) `BigInt` arbitrary large integer for combinatorial number, included
 5. [Eigen](https://eigen.tuxfamily.org/) for matrix decomposition, included
 6. [tbb](https://github.com/oneapi-src/oneTBB) for parallel computing
+7. [exprtk](https://github.com/ArashPartow/exprtk.git) for expression parsing, included
+8. [exprtk-custom-types](https://github.com/ArashPartow/exprtk-custom-types.git) for `mpreal` support, included
 
-## How To Compile
+## How To
+
+### Compile
 
 The following is based on Fedora. For Windows users, please use WSL.
 Native support is hard as porting dependencies to Windows is cumbersome.
@@ -39,28 +45,24 @@ Native support is hard as porting dependencies to Windows is cumbersome.
    make
    ```
 
-## How To Use
+### Use
 
-### Provide Kernel
+#### Provide Kernel
 
-It is necessary to compile the application with the desired kernel function first.
+It is necessary to provide kernel function in a text file.
+The file should contain the kernel function expressed as a function of variable `t`.
 
-In the `Kernel` class (`src/VPMR.cpp`), change the `smooth_function` function to the target kernel function.
+The `exprtk` is used to parse the expression and compute the value.
+The provided kernel function must be valid and supported by `exprtk`.
 
-```cpp
-class Kernel {
-    //
-    // ... other functions
-    //
-    
-    // change this function to the target kernel function in convolution
-    static mpreal smooth_function(const mpreal &x) {
-        return exp(-x * x / 4);
-    }
-};
+For example, to compute the approximation of `exp(-t^2/8)`, one can create a file `kernel.txt` with the following
+content:
+
+```text
+exp(-t*t/8)
 ```
 
-### Usage
+#### Usage
 
 All available options are:
 
@@ -74,12 +76,13 @@ Options:
    -d <int>     number of digits (default: 512)
    -q <int>     quadrature order (default: 500)
    -e <float>   tolerance (default: 1E-8)
+   -k <string>  file name of kernel function (default: exp(-t^2/4))
    -h           print this help message
 ```
 
-### Example
+#### Example
 
-The default kernel is `exp(-x^2/4)`. One can run the application with the following command:
+The default kernel is `exp(-t^2/4)`. One can run the application with the following command:
 
 ```bash
 ./vpmr -n 30
@@ -94,18 +97,19 @@ Using the following parameters:
      order = 500.
  precision = 512.
  tolerance = 1.0000e-08.
+    kernel = exp(-t*t/4).
 
 M = 
 +1.0589202279681926e-11+0.0000000000000000e+00j
--5.4905134221689723e-03+2.2104939243740062e-03j
--5.4905134221689723e-03-2.2104939243740062e-03j
-+1.1745193571738945e+01+2.3424418474362436e-153j
--5.5143304351134406e+00-5.7204056791636839e+00j
--5.5143304351134406e+00+5.7204056791636839e+00j
--1.6161617424833765e-02+2.3459542440459513e+00j
--1.6161617424833765e-02-2.3459542440459513e+00j
-+1.6338578576177490e-01-1.9308431539218421e-01j
-+1.6338578576177490e-01+1.9308431539218421e-01j
+-5.4905134221689715e-03+2.2104939243740062e-03j
+-5.4905134221689715e-03-2.2104939243740062e-03j
++1.1745193571738943e+01-5.7707212536725188e-153j
+-5.5143304351134397e+00-5.7204056791636839e+00j
+-5.5143304351134397e+00+5.7204056791636839e+00j
+-1.6161617424833762e-02+2.3459542440459513e+00j
+-1.6161617424833762e-02-2.3459542440459513e+00j
++1.6338578576177487e-01-1.9308431539218418e-01j
++1.6338578576177487e-01+1.9308431539218418e-01j
 S = 
 +0.0000000000000000e+00+0.0000000000000000e+00j
 +1.7655956664692953e+00-2.7555720406099038e+00j
@@ -118,10 +122,10 @@ S =
 +1.8197653300065935e+00-1.9494562062795735e+00j
 +1.8197653300065935e+00+1.9494562062795735e+00j
 
-Running time: 11 s.
+Running time: 7 s.
 ```
 
-### Visualisation
+#### Visualisation
 
 The `plotter` folder contains a Python script to plot the result.
 
@@ -133,6 +137,15 @@ result.
 For the above example, the result is:
 
 ![exp(-x^2/4)](example.png)
+
+#### Arbitrary Kernel
+
+```bash
+echo "exp(-t*t/8)" > kernel.txt
+ ./vpmr -n 60 -k kernel.txt -nc 6
+```
+
+![exp(-x^2/8)](arbitrary.png)
 
 ## Binary
 
@@ -151,5 +164,3 @@ vpmr/cmake-build-release on  master [!] via △ v3.26.0
         libc.so.6 => /lib64/libc.so.6 (0x00007f7208143000)
         /lib64/ld-linux-x86-64.so.2 (0x00007f72088a1000)
 ```
-
-You may wish to compile the application anyway since I do not know what kernel you want to approximate.

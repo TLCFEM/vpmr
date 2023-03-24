@@ -24,6 +24,9 @@
 #include "unsupported/Eigen/MPRealSupport"
 #include "unsupported/Eigen/MatrixFunctions"
 #include <chrono>
+#include <mpfr/exprtk_mpfr_adaptor.hpp>
+#include <mutex>
+#include <tbb/concurrent_unordered_map.h>
 
 using namespace mpfr;
 using namespace Eigen;
@@ -33,6 +36,7 @@ int N = 10; // number of terms
 int DIGIT = 512; // number of digits
 int QUAD_ORDER = 500; // number of quadrature points
 mpreal TOL = mpreal("1E-8"); // tolerance
+std::string KERNEL = "exp(-t*t/4)"; // default kernel
 
 BigInt comb_impl(unsigned, unsigned);
 
@@ -52,18 +56,42 @@ BigInt comb_impl(unsigned n, unsigned k) {
 // integrand in eq. 2.2 --- K(t)cos(jt)
 class Kernel {
     const int j;
+
+    static mpreal time;
+
+    static exprtk::symbol_table<mpreal> symbol_table;
+    static exprtk::expression<mpreal> expression;
+    static exprtk::parser<mpreal> parser;
+
+    static tbb::concurrent_unordered_map<int, mpreal> value;
+
+    static std::mutex eval_mutex;
 public:
+    static bool compile() {
+        symbol_table.add_variable("t", time);
+        symbol_table.add_constants();
+        expression.register_symbol_table(symbol_table);
+        return parser.compile(KERNEL, expression);
+    }
+
     explicit Kernel(const int J) : j(J) {}
 
-    mpreal operator()(const mpreal &r) const {
-        return smooth_function(-NC * log((mpreal(1) + cos(r)) >> 1)) * cos(j * r);
-    }
-
-    // change this function to the target kernel function in convolution
-    static mpreal smooth_function(const mpreal &x) {
-        return exp(-x * x / 4);
+    mpreal operator()(const int i, const mpreal &r) const {
+        if (value.find(i) == value.end()) {
+            std::scoped_lock lock(eval_mutex);
+            time = -NC * log((mpreal(1) + cos(r)) >> 1);
+            value.insert(std::make_pair(i, expression.value()));
+        }
+        return value[i] * cos(j * r);
     }
 };
+
+tbb::concurrent_unordered_map<int, mpreal> Kernel::value;
+mpreal Kernel::time;
+exprtk::symbol_table<mpreal> Kernel::symbol_table;
+exprtk::expression<mpreal> Kernel::expression;
+exprtk::parser<mpreal> Kernel::parser;
+std::mutex Kernel::eval_mutex;
 
 using mat = Eigen::Matrix<mpreal, Dynamic, Dynamic>;
 using vec = Eigen::Matrix<mpreal, Dynamic, 1>;
@@ -122,7 +150,7 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec &A, const vec &B, const vec
 }
 
 mpreal weight(const Quadrature &quad, const int j) {
-    auto k_hat = [&quad](const int l) { return 2 / MP_PI * quad.integrate(Kernel(l)); };
+    auto k_hat = [&quad](const int l) { return quad.integrate(Kernel(l)); };
     auto sgn_bit = [](const int l) { return l % 2 == 0 ? 1 : -1; };
 
     if (0 == j) {
@@ -185,6 +213,7 @@ int print_helper() {
     std::cout << "   -d <int>     number of digits (default: 512)\n";
     std::cout << "   -q <int>     quadrature order (default: 500)\n";
     std::cout << "   -e <float>   tolerance (default: 1E-8)\n";
+    std::cout << "   -k <string>  file name of kernel function (default: exp(-t^2/4))\n";
     std::cout << "   -h           print this help message\n";
     return 0;
 }
@@ -204,10 +233,26 @@ int main(const int argc, const char **argv) {
         else if (token == "-q") QUAD_ORDER = std::stoi(argv[++I]);
         else if (token == "-e") TOL = mpreal(argv[++I]);
         else if (token == "-h") return print_helper();
-        else {
+        else if (token == "-k") {
+            const std::string file_name(argv[++I]);
+            std::ifstream file(file_name);
+            if (!file.is_open()) {
+                std::cerr << "Cannot open file: " << file_name << std::endl;
+                return 1;
+            }
+            KERNEL = "";
+            std::string line;
+            while (std::getline(file, line)) KERNEL += line;
+            file.close();
+        } else {
             std::cerr << "Unknown option: " << token << std::endl;
             return 1;
         }
+    }
+
+    if (!Kernel::compile()) {
+        std::cerr << "Cannot compile kernel function." << std::endl;
+        return 1;
     }
 
     std::cout << std::scientific << std::setprecision(4);
@@ -217,7 +262,8 @@ int main(const int argc, const char **argv) {
     std::cout << "         n = " << N << ".\n";
     std::cout << "     order = " << QUAD_ORDER << ".\n";
     std::cout << " precision = " << DIGIT << ".\n";
-    std::cout << " tolerance = " << TOL.toDouble() << ".\n\n";
+    std::cout << " tolerance = " << TOL.toDouble() << ".\n";
+    std::cout << "    kernel = " << KERNEL << ".\n\n";
 
     std::cout << std::scientific << std::showpos << std::setprecision(16);
 

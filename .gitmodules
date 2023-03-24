@@ -4,3 +4,9 @@
 [submodule "mpreal.git"]
 	path = mpreal
 	url = https://github.com/advanpix/mpreal.git
+[submodule "exprtk.git"]
+	path = exprtk
+	url = https://github.com/ArashPartow/exprtk.git
+[submodule "exprtk-custom-types.git"]
+	path = exprtk-custom-types
+	url = https://github.com/ArashPartow/exprtk-custom-types.git
