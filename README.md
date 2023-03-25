@@ -24,6 +24,10 @@ the [original](https://github.com/ZXGao97/VPMR) MATLAB implementation for more d
 
 ### Compile
 
+> **Warning**
+> The application relies on `eigen` and `exprtk`, which are very heavy usage of templates.
+> The compilation would take minutes and around 1 GB memory.
+
 The following is based on Fedora. For Windows users, please use WSL.
 Native support is hard as porting dependencies to Windows is cumbersome.
 
