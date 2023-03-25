@@ -31,6 +31,7 @@
 using namespace mpfr;
 using namespace Eigen;
 
+bool OUTPUT_W = false;              // output W
 int NC = 4;                         // maximum exponent
 int N = 10;                         // number of terms
 int DIGIT = 512;                    // number of digits
@@ -196,6 +197,10 @@ std::tuple<cx_vec, cx_vec> vpmr() {
 
     vec W = vec::Zero(2 * N);
     for(auto I = 0; I < W.size(); ++I) W(I) = weight(quad, I);
+    if(OUTPUT_W) {
+        std::cout << "W = \n";
+        for(auto I = 0; I < W.size(); ++I) std::cout << W(I).toString() << '\n';
+    }
 
     // step 1
     vec A = vec::Zero(W.size() - 1), B = vec::Zero(A.size()), C = vec::Zero(A.size());
@@ -248,6 +253,8 @@ int main(const int argc, const char** argv) {
             QUAD_ORDER = std::stoi(argv[++I]);
         else if(token == "-e")
             TOL = mpreal(argv[++I]);
+        else if(token == "-w")
+            OUTPUT_W = true;
         else if(token == "-h")
             return print_helper();
         else if(token == "-k") {
