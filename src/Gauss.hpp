@@ -27,29 +27,34 @@
 
 using namespace mpfr;
 
-mpreal MP_PI = const_pi(1000);
+mpreal MP_PI = [] {
+    mpreal::set_default_prec(512);
+    return const_pi();
+}();
 mpreal MP_PI_HALF{MP_PI / 2};
+extern int DIGIT;
 
 class Evaluation {
     const size_t degree;
 
     mpreal _x, _v, _d;
 public:
-    explicit Evaluation(const mpreal &X, const size_t D) : degree(D), _x(X), _v(1), _d(0) { this->evaluate(X); }
+    explicit Evaluation(const mpreal &X, const size_t D)
+            : degree(D), _x(X), _v(1, DIGIT), _d(0, DIGIT) { this->evaluate(X); }
 
     void evaluate(const mpreal &x) {
         this->_x = x;
 
-        mpreal left{x}, right{1};
+        mpreal left{x}, right{1, DIGIT};
 
         for (int i = 2; i <= degree; ++i) {
-            this->_v = ((mpreal(2) * i - mpreal(1)) * x * left - (i - mpreal(1)) * right) / i;
+            this->_v = ((mpreal(2, DIGIT) * i - mpreal(1, DIGIT)) * x * left - (i - mpreal(1, DIGIT)) * right) / i;
 
             right = left;
             left = this->_v;
         }
 
-        this->_d = degree / (x * x - mpreal(1)) * (x * this->_v - right);
+        this->_d = degree / (x * x - mpreal(1, DIGIT)) * (x * this->_v - right);
     }
 
     [[nodiscard]] mpreal v() const { return this->_v; }
@@ -70,16 +75,16 @@ public:
               _r(std::make_unique<mpreal[]>(degree)),
               _w(std::make_unique<mpreal[]>(degree)) {
         for (size_t i = 0; i < degree / 2 + 1; ++i) {
-            mpreal dr{1};
+            mpreal dr{1, DIGIT};
 
-            Evaluation eval(cos(MP_PI * mpreal(4 * i + 3) / mpreal(4 * degree + 2)), degree);
+            Evaluation eval(cos(MP_PI * mpreal(4 * i + 3, DIGIT) / mpreal(4 * degree + 2, DIGIT)), degree);
             do {
                 dr = eval.v() / eval.d();
                 eval.evaluate(eval.x() - dr);
             } while (abs(dr) > std::numeric_limits<mpreal>::epsilon());
 
             this->_r[i] = eval.x();
-            this->_w[i] = mpreal(2) / ((mpreal(1) - eval.x() * eval.x()) * eval.d() * eval.d());
+            this->_w[i] = mpreal(2, DIGIT) / ((mpreal(1, DIGIT) - eval.x() * eval.x()) * eval.d() * eval.d());
         }
 
         for (size_t i = degree - 1; i >= degree / 2; --i) {
@@ -100,15 +105,16 @@ public:
 
     template<typename Function>
     mpreal integrate(Function &&f) const {
-//        mpreal total(0);
-        auto total = tbb::parallel_reduce(
-                tbb::blocked_range<int>(0, int(poly.degree)), mpreal(0),
+//        mpreal sum{0, DIGIT};
+//        for (int i = 0; i < int(poly.degree); ++i)
+//            sum += poly.weight(i) * f(i, MP_PI_HALF * poly.root(i) + MP_PI_HALF);
+//        return sum;
+        return tbb::parallel_reduce(
+                tbb::blocked_range<int>(0, int(poly.degree)), mpreal(0, DIGIT),
                 [&](const tbb::blocked_range<int> &r, mpreal running_total) {
                     for (auto i = r.begin(); i < r.end(); ++i)
                         running_total += poly.weight(i) * f(i, MP_PI_HALF * poly.root(i) + MP_PI_HALF);
                     return running_total;
                 }, std::plus<>());
-//        for (int i = 0; i < poly.degree; ++i) total += poly.weight(i) * f(i, MP_PI_HALF * poly.root(i) + MP_PI_HALF);
-        return total;
     }
 };

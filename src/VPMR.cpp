@@ -24,9 +24,9 @@
 #include "unsupported/Eigen/MPRealSupport"
 #include "unsupported/Eigen/MatrixFunctions"
 #include <chrono>
-#include <mpfr/exprtk_mpfr_adaptor.hpp>
 #include <mutex>
 #include <tbb/concurrent_unordered_map.h>
+#include <mpfr/exprtk_mpfr_adaptor.hpp>
 
 using namespace mpfr;
 using namespace Eigen;
@@ -35,7 +35,7 @@ int NC = 4; // maximum exponent
 int N = 10; // number of terms
 int DIGIT = 512; // number of digits
 int QUAD_ORDER = 500; // number of quadrature points
-mpreal TOL = mpreal("1E-8"); // tolerance
+mpreal TOL = mpreal("1E-8", DIGIT); // tolerance
 std::string KERNEL = "exp(-t*t/4)"; // default kernel
 
 BigInt comb_impl(unsigned, unsigned);
@@ -79,7 +79,7 @@ public:
     mpreal operator()(const int i, const mpreal &r) const {
         if (value.find(i) == value.end()) {
             std::scoped_lock lock(eval_mutex);
-            time = -NC * log((mpreal(1) + cos(r)) >> 1);
+            time = -NC * log((mpreal(1, DIGIT) + cos(r)) >> 1);
             value.insert(std::make_pair(i, expression.value()));
         }
         return value[i] * cos(j * r);
@@ -104,7 +104,7 @@ mat lyap(const mat &A, const mat &C) {
 
 Index pos(const vec &A) {
     const auto target = TOL * .5;
-    auto sum = mpreal(0);
+    auto sum = mpreal(0, DIGIT);
     Index P = 0;
     for (auto I = A.size() - 1; I >= 0; --I) {
         sum += A(I);
@@ -156,26 +156,28 @@ mpreal weight(const Quadrature &quad, const int j) {
     if (0 == j) {
         mpreal result = k_hat(0) / 2;
         for (auto l = 1; l <= N; ++l) result += sgn_bit(l) * k_hat(l);
-        for (auto l = 1; l < N; ++l) result += sgn_bit(N + l) * mpreal(N - l) / mpreal(N) * k_hat(N + l);
+        for (auto l = 1; l < N; ++l) result += sgn_bit(N + l) * mpreal(N - l, DIGIT) / mpreal(N, DIGIT) * k_hat(N + l);
         return result;
     }
 
-    mpreal result{0};
+    mpreal result{0, DIGIT};
 
     if (j > N) {
         for (auto l = j - N; l < N; ++l)
-            result += sgn_bit(N + l - j) * mpreal(N - l) / mpreal(N) * mpreal(N + l) / mpreal(N + l + j) *
-                      mpreal(comb(N + l + j, N + l - j).to_string()) * k_hat(N + l);
+            result += sgn_bit(N + l - j) * mpreal(N - l, DIGIT) / mpreal(N, DIGIT) *
+                      mpreal(N + l, DIGIT) / mpreal(N + l + j, DIGIT) *
+                      mpreal(comb(N + l + j, N + l - j).to_string(), DIGIT) * k_hat(N + l);
     } else {
         for (auto l = j; l <= N; ++l)
-            result += sgn_bit(l - j) * mpreal(l) / mpreal(l + j) *
-                      mpreal(comb(l + j, l - j).to_string()) * k_hat(l);
+            result += sgn_bit(l - j) * mpreal(l, DIGIT) / mpreal(l + j, DIGIT) *
+                      mpreal(comb(l + j, l - j).to_string(), DIGIT) * k_hat(l);
         for (auto l = 1; l < N; ++l)
-            result += sgn_bit(N + l - j) * mpreal(N - l) / mpreal(N) * mpreal(N + l) / mpreal(N + l + j) *
-                      mpreal(comb(N + l + j, N + l - j).to_string()) * k_hat(N + l);
+            result += sgn_bit(N + l - j) * mpreal(N - l, DIGIT) / mpreal(N, DIGIT) *
+                      mpreal(N + l, DIGIT) / mpreal(N + l + j, DIGIT) *
+                      mpreal(comb(N + l + j, N + l - j).to_string(), DIGIT) * k_hat(N + l);
     }
 
-    return result * pow(mpreal(4), j);
+    return result * pow(mpreal(4, DIGIT), j);
 }
 
 std::tuple<cx_vec, cx_vec> vpmr() {
@@ -187,7 +189,7 @@ std::tuple<cx_vec, cx_vec> vpmr() {
     // step 1
     vec A = vec::Zero(W.size() - 1), B = vec::Zero(A.size()), C = vec::Zero(A.size());
     for (decltype(W.size()) I = 0, J = 1; I < A.size(); ++I, ++J) {
-        A(I) = -mpreal(J) / NC;
+        A(I) = -mpreal(J, DIGIT) / NC;
         B(I) = sqrt(abs(W(J)));
         C(I) = sgn(W(J)) * B(I);
     }
@@ -199,7 +201,7 @@ std::tuple<cx_vec, cx_vec> vpmr() {
     MM.tail(M.size()) = M;
 
     cx_vec SS = cx_vec::Zero(S.size() + 1);
-    SS(0) = mpreal(0);
+    SS(0) = mpreal(0, DIGIT);
     SS.tail(S.size()) = -S;
 
     return std::make_tuple(MM, SS);
@@ -250,10 +252,15 @@ int main(const int argc, const char **argv) {
         }
     }
 
+    TOL.setPrecision(DIGIT);
+
     if (!Kernel::compile()) {
         std::cerr << "Cannot compile kernel function." << std::endl;
         return 1;
     }
+
+    MP_PI = const_pi(2 * DIGIT);
+    MP_PI_HALF = MP_PI / 2;
 
     std::cout << std::scientific << std::setprecision(4);
 
