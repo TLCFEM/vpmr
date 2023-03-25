@@ -32,3 +32,20 @@ jobs:
           tag: latest
           prerelease: false
           overwrite: true
+  ubuntu:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - name: Setup
+        run: |
+          echo "SP_TIME=daily-$(date +''%Y%m%d%H'')" >> $GITHUB_ENV
+          sudo apt-get update -y
+          sudo apt-get install gcc g++ gfortran cmake libtbb-dev libmpfr-dev libgmp-dev git -y
+      - name: Clone
+        uses: actions/checkout@v3
+      - name: Compile
+        run: |
+          git config --global --add safe.directory /__w/vpmr/vpmr
+          git submodule update --init --recursive
+          cmake -DCMAKE_BUILD_TYPE=Release .
+          make -j"$(nproc)"
