@@ -26,7 +26,7 @@ public:
     Cache() = default;
 
     explicit Cache(std::function<R(A...)> f)
-            : f_(f) {}
+        : f_(f) {}
 
     R operator()(A... a) {
         std::tuple<A...> key(a...);

@@ -15,26 +15,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 
-#include <iostream>
-#include "Cache.hpp"
-#include "BigInt.hpp"
-#include "Gauss.hpp"
-#include "Eigen/Core"
-#include "Eigen/Eigenvalues"
-#include "unsupported/Eigen/MPRealSupport"
-#include "unsupported/Eigen/MatrixFunctions"
 #include <chrono>
+#include <iostream>
+#include <mpfr/exprtk_mpfr_adaptor.hpp>
 #include <mutex>
 #include <tbb/concurrent_unordered_map.h>
-#include <mpfr/exprtk_mpfr_adaptor.hpp>
+#include "BigInt.hpp"
+#include "Cache.hpp"
+#include "Eigen/Core"
+#include "Eigen/Eigenvalues"
+#include "Gauss.hpp"
+#include "unsupported/Eigen/MPRealSupport"
+#include "unsupported/Eigen/MatrixFunctions"
 
 using namespace mpfr;
 using namespace Eigen;
 
-int NC = 4; // maximum exponent
-int N = 10; // number of terms
-int DIGIT = 512; // number of digits
-int QUAD_ORDER = 500; // number of quadrature points
+int NC = 4;                         // maximum exponent
+int N = 10;                         // number of terms
+int DIGIT = 512;                    // number of digits
+int QUAD_ORDER = 500;               // number of quadrature points
 mpreal TOL = mpreal("1E-8", DIGIT); // tolerance
 std::string KERNEL = "exp(-t*t/4)"; // default kernel
 
@@ -45,70 +45,78 @@ Cache<BigInt, unsigned, unsigned> comb(comb_impl);
 
 // recursive implementation of combinatorial number calculation
 BigInt comb_impl(unsigned n, unsigned k) {
-    if (k == 0 || k == n) return {1};
-    if (k == 1 || k == n - 1) return {n};
-    if (k > n) return {0};
-    if (2 * k > n) k = n - k;
+    if(k == 0 || k == n) return {1};
+    if(k == 1 || k == n - 1) return {n};
+    if(k > n) return {0};
+    if(2 * k > n) k = n - k;
 
     return comb(n - 1, k - 1) + comb(n - 1, k);
 }
 
-// integrand in eq. 2.2 --- K(t)cos(jt)
-class Kernel {
-    const int j;
+// kernel function
+class Expression {
+    mpreal time;
 
-    static mpreal time;
+    exprtk::symbol_table<mpreal> symbol_table;
+    exprtk::expression<mpreal> expression;
+    exprtk::parser<mpreal> parser;
 
-    static exprtk::symbol_table<mpreal> symbol_table;
-    static exprtk::expression<mpreal> expression;
-    static exprtk::parser<mpreal> parser;
+    std::mutex eval_mutex;
 
-    static tbb::concurrent_unordered_map<int, mpreal> value;
-
-    static std::mutex eval_mutex;
 public:
-    static bool compile() {
+    bool compile() {
         symbol_table.add_variable("t", time);
         symbol_table.add_constants();
         expression.register_symbol_table(symbol_table);
         return parser.compile(KERNEL, expression);
     }
 
-    explicit Kernel(const int J) : j(J) {}
+    mpreal value(const mpreal& t) {
+        std::scoped_lock lock(eval_mutex);
+        time = t;
+        return expression.value();
+    }
+};
 
-    mpreal operator()(const int i, const mpreal &r) const {
-        if (value.find(i) == value.end()) {
-            std::scoped_lock lock(eval_mutex);
-            time = -NC * log((mpreal(1, DIGIT) + cos(r)) >> 1);
-            value.insert(std::make_pair(i, expression.value()));
-        }
+// integrand in eq. 2.2 --- K(t)cos(jt)
+class Integrand {
+    static Expression* expression;
+    static tbb::concurrent_unordered_map<int, mpreal> value;
+
+    const int j;
+
+public:
+    explicit Integrand(const int J)
+        : j(J) {}
+
+    static void set_expression(Expression* E) { expression = E; }
+
+    mpreal operator()(const int i, const mpreal& r) const {
+        if(value.find(i) == value.end())
+            value.insert(std::make_pair(i, expression->value(-NC * log((mpreal(1, DIGIT) + cos(r)) >> 1))));
         return value[i] * cos(j * r);
     }
 };
 
-tbb::concurrent_unordered_map<int, mpreal> Kernel::value;
-mpreal Kernel::time;
-exprtk::symbol_table<mpreal> Kernel::symbol_table;
-exprtk::expression<mpreal> Kernel::expression;
-exprtk::parser<mpreal> Kernel::parser;
-std::mutex Kernel::eval_mutex;
+Expression* Integrand::expression = nullptr;
+tbb::concurrent_unordered_map<int, mpreal> Integrand::value(QUAD_ORDER);
 
 using mat = Eigen::Matrix<mpreal, Dynamic, Dynamic>;
 using vec = Eigen::Matrix<mpreal, Dynamic, 1>;
 using cx_vec = Eigen::Matrix<std::complex<mpreal>, Dynamic, 1>;
 
 // step 2
-mat lyap(const mat &A, const mat &C) {
+mat lyap(const mat& A, const mat& C) {
     return Eigen::internal::matrix_function_solve_triangular_sylvester(A, A, C);
 }
 
-Index pos(const vec &A) {
-    const auto target = TOL * .5;
+long pos(const vec& A) {
+    const auto target = TOL / 2;
     auto sum = mpreal(0, DIGIT);
-    Index P = 0;
-    for (auto I = A.size() - 1; I >= 0; --I) {
+    long P = 0;
+    for(auto I = A.size() - 1; I >= 0; --I) {
         sum += A(I);
-        if (sum > target) {
+        if(sum > target) {
             P = I + 1;
             break;
         }
@@ -116,27 +124,29 @@ Index pos(const vec &A) {
     return P;
 }
 
-std::tuple<cx_vec, cx_vec> model_reduction(const vec &A, const vec &B, const vec &C) {
+std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec& C) {
     // step 3
     const mat S = lyap(A.asDiagonal(), -B * B.transpose()).llt().matrixL();
     const mat L = lyap(A.asDiagonal(), -C * C.transpose()).llt().matrixL();
 
     // step 4
-    const auto SVD = BDCSVD<mat, ComputeFullV | ComputeFullU>(S.transpose() * L);
-    const auto &U = SVD.matrixU();
-    const auto &SIG = SVD.singularValues();
+    const auto SVD = BDCSVD<mat, ComputeFullU>(S.transpose() * L);
+    const auto& U = SVD.matrixU();
+    const auto& SIG = SVD.singularValues();
 
     // step 7
     const auto P = pos(SIG);
-    if (P == SIG.size())
-        throw std::invalid_argument("No solution can be found, try to increase tolerance (e) or number of terms (n).");
+    if(P == SIG.size())
+        throw std::invalid_argument("No solution found, try to increase tolerance (e) or number of terms (n).");
 
+    // step 5
     auto SS = SIG;
-    for (auto I = 0; I < SS.size(); ++I) SS(I) = pow(SS(I), -.5);
+    for(auto I = 0; I < SS.size(); ++I) SS(I) = pow(SS(I), -.5);
 
     // step 5
     const mat T = S * U * SS.asDiagonal();
     const auto LUT = T.lu();
+
     // step 6
     const auto EIGEN = EigenSolver<mat>(LUT.solve(A.asDiagonal() * T).block(0, 0, P, P));
     // step 8
@@ -149,32 +159,33 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec &A, const vec &B, const vec
     return std::make_tuple(X.fullPivLu().solve(BB).cwiseProduct(CC), EIGEN.eigenvalues());
 }
 
-mpreal weight(const Quadrature &quad, const int j) {
-    auto k_hat = [&quad](const int l) { return quad.integrate(Kernel(l)); };
+mpreal weight(const Quadrature& quad, const int j) {
+    auto k_hat = [&quad](const int l) { return quad.integrate(Integrand(l)); };
     auto sgn_bit = [](const int l) { return l % 2 == 0 ? 1 : -1; };
 
-    if (0 == j) {
+    if(0 == j) {
         mpreal result = k_hat(0) / 2;
-        for (auto l = 1; l <= N; ++l) result += sgn_bit(l) * k_hat(l);
-        for (auto l = 1; l < N; ++l) result += sgn_bit(N + l) * mpreal(N - l, DIGIT) / mpreal(N, DIGIT) * k_hat(N + l);
+        for(auto l = 1; l <= N; ++l) result += sgn_bit(l) * k_hat(l);
+        for(auto l = 1; l < N; ++l) result += sgn_bit(N + l) * mpreal(N - l, DIGIT) / mpreal(N, DIGIT) * k_hat(N + l);
         return result;
     }
 
     mpreal result{0, DIGIT};
 
-    if (j > N) {
-        for (auto l = j - N; l < N; ++l)
+    if(j > N) {
+        for(auto l = j - N; l < N; ++l)
             result += sgn_bit(N + l - j) * mpreal(N - l, DIGIT) / mpreal(N, DIGIT) *
-                      mpreal(N + l, DIGIT) / mpreal(N + l + j, DIGIT) *
-                      mpreal(comb(N + l + j, N + l - j).to_string(), DIGIT) * k_hat(N + l);
-    } else {
-        for (auto l = j; l <= N; ++l)
+                mpreal(N + l, DIGIT) / mpreal(N + l + j, DIGIT) *
+                mpreal(comb(N + l + j, N + l - j).to_string(), DIGIT) * k_hat(N + l);
+    }
+    else {
+        for(auto l = j; l <= N; ++l)
             result += sgn_bit(l - j) * mpreal(l, DIGIT) / mpreal(l + j, DIGIT) *
-                      mpreal(comb(l + j, l - j).to_string(), DIGIT) * k_hat(l);
-        for (auto l = 1; l < N; ++l)
+                mpreal(comb(l + j, l - j).to_string(), DIGIT) * k_hat(l);
+        for(auto l = 1; l < N; ++l)
             result += sgn_bit(N + l - j) * mpreal(N - l, DIGIT) / mpreal(N, DIGIT) *
-                      mpreal(N + l, DIGIT) / mpreal(N + l + j, DIGIT) *
-                      mpreal(comb(N + l + j, N + l - j).to_string(), DIGIT) * k_hat(N + l);
+                mpreal(N + l, DIGIT) / mpreal(N + l + j, DIGIT) *
+                mpreal(comb(N + l + j, N + l - j).to_string(), DIGIT) * k_hat(N + l);
     }
 
     return result * pow(mpreal(4, DIGIT), j);
@@ -184,11 +195,11 @@ std::tuple<cx_vec, cx_vec> vpmr() {
     const auto quad = Quadrature(QUAD_ORDER);
 
     vec W = vec::Zero(2 * N);
-    for (auto I = 0; I < W.size(); ++I) W(I) = weight(quad, I);
+    for(auto I = 0; I < W.size(); ++I) W(I) = weight(quad, I);
 
     // step 1
     vec A = vec::Zero(W.size() - 1), B = vec::Zero(A.size()), C = vec::Zero(A.size());
-    for (decltype(W.size()) I = 0, J = 1; I < A.size(); ++I, ++J) {
+    for(decltype(W.size()) I = 0, J = 1; I < A.size(); ++I, ++J) {
         A(I) = -mpreal(J, DIGIT) / NC;
         B(I) = sqrt(abs(W(J)));
         C(I) = sgn(W(J)) * B(I);
@@ -208,8 +219,9 @@ std::tuple<cx_vec, cx_vec> vpmr() {
 }
 
 int print_helper() {
-    std::cout << "Usage: vpmr [options]\n" << std::endl;
-    std::cout << "Options:\n" << std::endl;
+    std::cout << "--> \xF0\x9F\xA5\xB7 VPMR C++ Implementation <--\n\n";
+    std::cout << "Usage: vpmr [options]\n\n";
+    std::cout << "Options:\n\n";
     std::cout << "   -nc <int>    number of exponent (default: 4)\n";
     std::cout << "   -n <int>     number of terms (default: 10)\n";
     std::cout << "   -d <int>     number of digits (default: 512)\n";
@@ -220,44 +232,61 @@ int print_helper() {
     return 0;
 }
 
-int main(const int argc, const char **argv) {
+int main(const int argc, const char** argv) {
     const auto start = std::chrono::high_resolution_clock::now();
 
-    // set precision
-    mpreal::set_default_prec(DIGIT);
-
-    for (auto I = 1; I < argc; ++I) {
+    for(auto I = 1; I < argc; ++I) {
         const auto token = std::string(argv[I]);
 
-        if (token == "-nc") NC = std::stoi(argv[++I]);
-        else if (token == "-n") N = std::stoi(argv[++I]);
-        else if (token == "-d") DIGIT = std::stoi(argv[++I]);
-        else if (token == "-q") QUAD_ORDER = std::stoi(argv[++I]);
-        else if (token == "-e") TOL = mpreal(argv[++I]);
-        else if (token == "-h") return print_helper();
-        else if (token == "-k") {
+        if(token == "-nc")
+            NC = std::stoi(argv[++I]);
+        else if(token == "-n")
+            N = std::stoi(argv[++I]);
+        else if(token == "-d")
+            DIGIT = std::stoi(argv[++I]);
+        else if(token == "-q")
+            QUAD_ORDER = std::stoi(argv[++I]);
+        else if(token == "-e")
+            TOL = mpreal(argv[++I]);
+        else if(token == "-h")
+            return print_helper();
+        else if(token == "-k") {
             const std::string file_name(argv[++I]);
             std::ifstream file(file_name);
-            if (!file.is_open()) {
+            if(!file.is_open()) {
                 std::cerr << "Cannot open file: " << file_name << std::endl;
                 return 1;
             }
             KERNEL = "";
             std::string line;
-            while (std::getline(file, line)) KERNEL += line;
+            while(std::getline(file, line)) KERNEL += line;
             file.close();
-        } else {
+        }
+        else {
             std::cerr << "Unknown option: " << token << std::endl;
             return 1;
         }
     }
 
+    // set precision
+    mpreal::set_default_prec(DIGIT);
+
     TOL.setPrecision(DIGIT);
 
-    if (!Kernel::compile()) {
-        std::cerr << "Cannot compile kernel function." << std::endl;
+    // check size
+    const BigInt comb_max = comb(2 * N, N);
+    const BigInt digit_max = pow(BigInt(2), DIGIT);
+    if(comb_max.to_string().size() >= digit_max.to_string().size()) {
+        std::cerr << "Too few digits to hold combinatorial number, reduce (n) or increase digits.\n";
         return 1;
     }
+
+    Expression kernel;
+    if(!kernel.compile()) {
+        std::cerr << "Cannot compile kernel function: " << KERNEL << ".\n";
+        return 1;
+    }
+    Integrand::set_expression(&kernel);
 
     MP_PI = const_pi(2 * DIGIT);
     MP_PI_HALF = MP_PI / 2;
@@ -279,11 +308,12 @@ int main(const int argc, const char **argv) {
         const auto [M, S] = vpmr();
 
         std::cout << "M = \n";
-        for (auto I = 0; I < M.size(); ++I) std::cout << M(I).real().toDouble() << M(I).imag().toDouble() << "j\n";
+        for(auto I = 0; I < M.size(); ++I) std::cout << M(I).real().toDouble() << M(I).imag().toDouble() << "j\n";
 
         std::cout << "S = \n";
-        for (auto I = 0; I < S.size(); ++I) std::cout << S(I).real().toDouble() << S(I).imag().toDouble() << "j\n";
-    } catch (const std::exception &e) {
+        for(auto I = 0; I < S.size(); ++I) std::cout << S(I).real().toDouble() << S(I).imag().toDouble() << "j\n";
+    }
+    catch(const std::exception& e) {
         std::cerr << e.what() << std::endl;
         return 1;
     }

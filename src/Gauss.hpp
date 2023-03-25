@@ -17,13 +17,13 @@
 
 #pragma once
 
-#include <iostream>
-#include <iomanip>
 #include <cmath>
+#include <iomanip>
+#include <iostream>
 #include <memory>
-#include "mpreal.h"
-#include <tbb/parallel_reduce.h>
 #include <tbb/blocked_range.h>
+#include <tbb/parallel_reduce.h>
+#include "mpreal.h"
 
 using namespace mpfr;
 
@@ -38,16 +38,17 @@ class Evaluation {
     const size_t degree;
 
     mpreal _x, _v, _d;
-public:
-    explicit Evaluation(const mpreal &X, const size_t D)
-            : degree(D), _x(X), _v(1, DIGIT), _d(0, DIGIT) { this->evaluate(X); }
 
-    void evaluate(const mpreal &x) {
+public:
+    explicit Evaluation(const mpreal& X, const size_t D)
+        : degree(D), _x(X), _v(1, DIGIT), _d(0, DIGIT) { this->evaluate(X); }
+
+    void evaluate(const mpreal& x) {
         this->_x = x;
 
         mpreal left{x}, right{1, DIGIT};
 
-        for (int i = 2; i <= degree; ++i) {
+        for(int i = 2; i <= degree; ++i) {
             this->_v = ((mpreal(2, DIGIT) * i - mpreal(1, DIGIT)) * x * left - (i - mpreal(1, DIGIT)) * right) / i;
 
             right = left;
@@ -67,27 +68,28 @@ public:
 class LegendrePolynomial {
 public:
     const size_t degree;
+
 private:
     std::unique_ptr<mpreal[]> _r, _w;
+
 public:
     explicit LegendrePolynomial(const size_t D)
-            : degree(D > 2 ? D : 2),
-              _r(std::make_unique<mpreal[]>(degree)),
-              _w(std::make_unique<mpreal[]>(degree)) {
-        for (size_t i = 0; i < degree / 2 + 1; ++i) {
+        : degree(D > 2 ? D : 2), _r(std::make_unique<mpreal[]>(degree)), _w(std::make_unique<mpreal[]>(degree)) {
+        for(size_t i = 0; i < degree / 2 + 1; ++i) {
             mpreal dr{1, DIGIT};
 
             Evaluation eval(cos(MP_PI * mpreal(4 * i + 3, DIGIT) / mpreal(4 * degree + 2, DIGIT)), degree);
             do {
                 dr = eval.v() / eval.d();
                 eval.evaluate(eval.x() - dr);
-            } while (abs(dr) > std::numeric_limits<mpreal>::epsilon());
+            }
+            while(abs(dr) > std::numeric_limits<mpreal>::epsilon());
 
             this->_r[i] = eval.x();
             this->_w[i] = mpreal(2, DIGIT) / ((mpreal(1, DIGIT) - eval.x() * eval.x()) * eval.d() * eval.d());
         }
 
-        for (size_t i = degree - 1; i >= degree / 2; --i) {
+        for(size_t i = degree - 1; i >= degree / 2; --i) {
             this->_r[i] = -this->_r[degree - i - 1];
             this->_w[i] = this->_w[degree - i - 1];
         }
@@ -100,21 +102,24 @@ public:
 
 class Quadrature {
     LegendrePolynomial poly;
+
 public:
-    explicit Quadrature(const size_t D) : poly(D) {}
+    explicit Quadrature(const size_t D)
+        : poly(D) {}
 
     template<typename Function>
-    mpreal integrate(Function &&f) const {
-//        mpreal sum{0, DIGIT};
-//        for (int i = 0; i < int(poly.degree); ++i)
-//            sum += poly.weight(i) * f(i, MP_PI_HALF * poly.root(i) + MP_PI_HALF);
-//        return sum;
+    mpreal integrate(Function&& f) const {
+        //        mpreal sum{0, DIGIT};
+        //        for (int i = 0; i < int(poly.degree); ++i)
+        //            sum += poly.weight(i) * f(i, MP_PI_HALF * poly.root(i) + MP_PI_HALF);
+        //        return sum;
         return tbb::parallel_reduce(
-                tbb::blocked_range<int>(0, int(poly.degree)), mpreal(0, DIGIT),
-                [&](const tbb::blocked_range<int> &r, mpreal running_total) {
-                    for (auto i = r.begin(); i < r.end(); ++i)
-                        running_total += poly.weight(i) * f(i, MP_PI_HALF * poly.root(i) + MP_PI_HALF);
-                    return running_total;
-                }, std::plus<>());
+            tbb::blocked_range<int>(0, int(poly.degree)), mpreal(0, DIGIT),
+            [&](const tbb::blocked_range<int>& r, mpreal running_total) {
+                for(auto i = r.begin(); i < r.end(); ++i)
+                    running_total += poly.weight(i) * f(i, MP_PI_HALF * poly.root(i) + MP_PI_HALF);
+                return running_total;
+            },
+            std::plus<>());
     }
 };
