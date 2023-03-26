@@ -5,47 +5,83 @@ on:
   pull_request:
     branches: [ master ]
 jobs:
-  fedora:
+  debian:
     runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    container: fedora:36
+    timeout-minutes: 10
+    container: debian
     steps:
       - name: Setup
         run: |
           echo "SP_TIME=daily-$(date +''%Y%m%d%H'')" >> $GITHUB_ENV
-          dnf upgrade --refresh -y
-          dnf install gcc g++ gfortran cmake tbb-devel mpfr-devel gmp-devel git -y
+          apt-get update && apt-get install -y cmake git g++ libtbb-dev libmpfr-dev libgmp-dev wget gtk-update-icon-cache
       - name: Clone
         uses: actions/checkout@v3
       - name: Compile
         run: |
           git config --global --add safe.directory /__w/vpmr/vpmr
           git submodule update --init --recursive
-          cmake -DCMAKE_BUILD_TYPE=Release .
+          sed -i 's/3.24/3.18/g' CMakeLists.txt
+          mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release ..
           make -j"$(nproc)"
+      - name: AppImage
+        run: |
+          echo "version: 1" >> AppImageBuilder.yml
+          echo "AppDir:" >> AppImageBuilder.yml
+          echo "  path: build/AppDir" >> AppImageBuilder.yml
+          echo "  app_info:" >> AppImageBuilder.yml
+          echo "    id: io.github.tlcfem.vpmr" >> AppImageBuilder.yml
+          echo "    name: vpmr" >> AppImageBuilder.yml
+          echo "    icon: application-vnd.appimage" >> AppImageBuilder.yml
+          echo "    version: 0.1.0" >> AppImageBuilder.yml
+          echo "    exec: usr/bin/vpmr" >> AppImageBuilder.yml
+          echo "    exec_args: \$@" >> AppImageBuilder.yml
+          echo "  files:" >> AppImageBuilder.yml
+          echo "    include:" >> AppImageBuilder.yml
+          echo "    - lib64/ld-linux-x86-64.so.2" >> AppImageBuilder.yml
+          echo "    exclude:" >> AppImageBuilder.yml
+          echo "    - usr/share/man" >> AppImageBuilder.yml
+          echo "    - usr/share/doc/*/README.*" >> AppImageBuilder.yml
+          echo "    - usr/share/doc/*/changelog.*" >> AppImageBuilder.yml
+          echo "    - usr/share/doc/*/NEWS.*" >> AppImageBuilder.yml
+          echo "    - usr/share/doc/*/TODO.*" >> AppImageBuilder.yml
+          echo "  test:" >> AppImageBuilder.yml
+          echo "    fedora-30:" >> AppImageBuilder.yml
+          echo "      image: appimagecrafters/tests-env:fedora-30" >> AppImageBuilder.yml
+          echo "      command: ./AppRun -h" >> AppImageBuilder.yml
+          echo "    debian-stable:" >> AppImageBuilder.yml
+          echo "      image: appimagecrafters/tests-env:debian-stable" >> AppImageBuilder.yml
+          echo "      command: ./AppRun -h" >> AppImageBuilder.yml
+          echo "    archlinux-latest:" >> AppImageBuilder.yml
+          echo "      image: appimagecrafters/tests-env:archlinux-latest" >> AppImageBuilder.yml
+          echo "      command: ./AppRun -h" >> AppImageBuilder.yml
+          echo "    centos-7:" >> AppImageBuilder.yml
+          echo "      image: appimagecrafters/tests-env:centos-7" >> AppImageBuilder.yml
+          echo "      command: ./AppRun -h" >> AppImageBuilder.yml
+          echo "    ubuntu-xenial:" >> AppImageBuilder.yml
+          echo "      image: appimagecrafters/tests-env:ubuntu-xenial" >> AppImageBuilder.yml
+          echo "      command: ./AppRun -h" >> AppImageBuilder.yml
+          echo "AppImage:" >> AppImageBuilder.yml
+          echo "  arch: x86_64" >> AppImageBuilder.yml
+          echo "  update-information: guess" >> AppImageBuilder.yml
+          cat AppImageBuilder.yml
+      - name: Package
+        run: |
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/1-alpha-20220822-1/linuxdeploy-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage
+          wget -q https://github.com/AppImageCrafters/appimage-builder/releases/download/v1.1.0/appimage-builder-1.1.0-x86_64.AppImage
+          chmod +x appimage-builder-1.1.0-x86_64.AppImage
+
+          ./linuxdeploy-x86_64.AppImage --appimage-extract-and-run --appdir AppDir --executable build/vpmr
+          ./appimage-builder-1.1.0-x86_64.AppImage --appimage-extract-and-run --recipe AppImageBuilder.yml --skip-tests
+          
+          chmod +x vpmr-0.1.0-x86_64.AppImage
+          ./vpmr-0.1.0-x86_64.AppImage --appimage-extract-and-run -h
       - name: Release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: vpmr
-          asset_name: vpmr
+          file: vpmr-0.1.0-x86_64.AppImage
+          asset_name: vpmr-0.1.0-x86_64.AppImage
           tag: latest
           prerelease: false
           overwrite: true
-  ubuntu:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    steps:
-      - name: Setup
-        run: |
-          echo "SP_TIME=daily-$(date +''%Y%m%d%H'')" >> $GITHUB_ENV
-          sudo apt-get update -y
-          sudo apt-get install gcc g++ gfortran cmake libtbb-dev libmpfr-dev libgmp-dev git -y
-      - name: Clone
-        uses: actions/checkout@v3
-      - name: Compile
-        run: |
-          git config --global --add safe.directory /__w/vpmr/vpmr
-          git submodule update --init --recursive
-          cmake -DCMAKE_BUILD_TYPE=Release .
-          make -j"$(nproc)"

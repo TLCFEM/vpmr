@@ -155,7 +155,7 @@ echo "exp(-t*t/8)" > kernel.txt
 
 ## Binary
 
-The binary released requires available `gmp`, `mpfr` and `tbb` libraries.
+The binary requires available `gmp`, `mpfr` and `tbb` libraries.
 
 ```bash
 vpmr/cmake-build-release on  master [!] via △ v3.26.0 
@@ -170,3 +170,5 @@ vpmr/cmake-build-release on  master [!] via △ v3.26.0
         libc.so.6 => /lib64/libc.so.6 (0x00007f7208143000)
         /lib64/ld-linux-x86-64.so.2 (0x00007f72088a1000)
 ```
+
+The distributed `appimage` is portable.
