@@ -89,7 +89,7 @@ def execute(n, nc, d, q, e, k, exe):
         print('cannot find the vpmr executable')
         return
 
-    command = [exe, '-n', n, '-nc', nc, '-d', d, '-q', q, '-e', str(e)]
+    command = [exe, '-n', str(n), '-nc', str(nc), '-d', str(d), '-q', str(q), '-e', str(e)]
     if k:
         command.extend(['-k', k])
     result = subprocess.check_output(command).decode('utf-8')

@@ -275,18 +275,19 @@ int main(const int argc, const char** argv) {
         }
     }
 
+    // check size
+    BigInt comb_max = comb(2 * N, N);
+    int comb_digit = 0;
+    while((comb_max /= 2) > 0) ++comb_digit;
+    if((comb_digit *= 8) >= DIGIT) {
+        std::cout << "Too few digits to hold combinatorial number, resetting digits to " << comb_digit << ".\n";
+        DIGIT = comb_digit;
+    }
+
     // set precision
     mpreal::set_default_prec(DIGIT);
 
     TOL.setPrecision(DIGIT);
-
-    // check size
-    const BigInt comb_max = comb(2 * N, N);
-    const BigInt digit_max = pow(BigInt(2), DIGIT);
-    if(comb_max.to_string().size() >= digit_max.to_string().size()) {
-        std::cerr << "Too few digits to hold combinatorial number, reduce (n) or increase digits.\n";
-        return 1;
-    }
 
     Expression kernel;
     if(!kernel.compile()) {
