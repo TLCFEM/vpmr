@@ -46,7 +46,7 @@ def split(r: str):
 def plotter(output: str):
     if (result := split(output)) is None:
         return
-    x = np.linspace(0, 5, 401)
+    x = np.linspace(0, 20, 401)
     yy = kernel(x)
     y = np.zeros(len(x), dtype=complex)
     for ml, sl in zip(*result):
@@ -61,7 +61,8 @@ def plotter(output: str):
     plt.legend(loc='lower left')
 
     ax2 = plt.twinx()
-    ax2.plot(x, np.abs(yy - y), 'g-', label='Error', linewidth=1)
+    ax2.plot(x, np.abs(yy - y), 'g-', label='error', linewidth=1)
+    # ax2.plot(x, y.imag, 'g--', label='imaginary', linewidth=1)
     ax2.set_yscale('log')
     ax2.set_ylabel('Absolute Error')
 

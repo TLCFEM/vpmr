@@ -15,11 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 
+#include <algorithm>
 #include <chrono>
 #include <iostream>
 #include <mpfr/exprtk_mpfr_adaptor.hpp>
 #include <mutex>
 #include <tbb/concurrent_unordered_map.h>
+#include <vector>
 #include "BigInt.hpp"
 #include "Cache.hpp"
 #include "Eigen/Core"
@@ -192,6 +194,20 @@ mpreal weight(const Quadrature& quad, const int j) {
     return result * pow(mpreal(4, DIGIT), j);
 }
 
+std::vector<long> sort_index(const cx_vec& v) {
+    std::vector<long> idx(v.size());
+    iota(idx.begin(), idx.end(), 0);
+
+    std::stable_sort(idx.begin(), idx.end(), [&v](const long i, const long j) {
+        const auto value_i = norm(v(i)).toDouble(), value_j = norm(v(j)).toDouble();
+        if(value_i > value_j) return true;
+        if(value_i < value_j) return false;
+        return v(i).imag() > 0;
+    });
+
+    return idx;
+}
+
 std::tuple<cx_vec, cx_vec> vpmr() {
     const auto quad = Quadrature(QUAD_ORDER);
 
@@ -212,13 +228,20 @@ std::tuple<cx_vec, cx_vec> vpmr() {
 
     auto [M, S] = model_reduction(A, B, C);
 
-    cx_vec MM = cx_vec::Zero(M.size() + 1);
-    MM(0) = W(0);
-    MM.tail(M.size()) = M;
+    auto ID = sort_index(M);
+    for(int I = int(ID.size()) - 1; I >= 0; --I)
+        if(norm(M(ID[I])) < std::numeric_limits<double>::epsilon())
+            ID.erase(ID.begin() + I);
+        else
+            break;
 
-    cx_vec SS = cx_vec::Zero(S.size() + 1);
+    if(abs(W(0)) < std::numeric_limits<double>::epsilon()) return std::make_tuple(M(ID), -S(ID));
+
+    cx_vec MM = cx_vec::Zero(long(ID.size()) + 1), SS = cx_vec::Zero(long(ID.size()) + 1);
+    MM(0) = W(0);
     SS(0) = mpreal(0, DIGIT);
-    SS.tail(S.size()) = -S;
+    MM.tail(ID.size()) = M(ID);
+    SS.tail(ID.size()) = -S(ID);
 
     return std::make_tuple(MM, SS);
 }
@@ -279,7 +302,7 @@ int main(const int argc, const char** argv) {
     BigInt comb_max = comb(2 * N, N);
     int comb_digit = 0;
     while((comb_max /= 2) > 0) ++comb_digit;
-    if((comb_digit *= 8) >= DIGIT) {
+    if((comb_digit *= 9) >= DIGIT) {
         std::cout << "Too few digits to hold combinatorial number, resetting digits to " << comb_digit << ".\n";
         DIGIT = comb_digit;
     }

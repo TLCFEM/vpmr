@@ -30,7 +30,7 @@ public:
 
     R operator()(A... a) {
         std::tuple<A...> key(a...);
-        if (auto search = map_.find(key); search != map_.end()) return search->second;
+        if(auto search = map_.find(key); search != map_.end()) return search->second;
         auto result = f_(a...);
         map_[key] = result;
         return result;
