@@ -14,64 +14,42 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
+import os
+import re
+import subprocess
+from os.path import exists
+from shutil import which
 
+import click
 import numpy as np
 from matplotlib import pyplot as plt
 
-weights = '''
-M = 
-+1.0589202279681926e-11+0.0000000000000000e+00j
--5.4905134221689723e-03+2.2104939243740062e-03j
--5.4905134221689723e-03-2.2104939243740062e-03j
-+1.1745193571738945e+01+2.3424418474362436e-153j
--5.5143304351134406e+00-5.7204056791636839e+00j
--5.5143304351134406e+00+5.7204056791636839e+00j
--1.6161617424833765e-02+2.3459542440459513e+00j
--1.6161617424833765e-02-2.3459542440459513e+00j
-+1.6338578576177490e-01-1.9308431539218421e-01j
-+1.6338578576177490e-01+1.9308431539218421e-01j
-S = 
-+0.0000000000000000e+00+0.0000000000000000e+00j
-+1.7655956664692953e+00-2.7555720406099038e+00j
-+1.7655956664692953e+00+2.7555720406099038e+00j
-+1.8757961592204051e+00-0.0000000000000000e+00j
-+1.8700580506914817e+00-6.2013413918954552e-01j
-+1.8700580506914817e+00+6.2013413918954552e-01j
-+1.8521958553280000e+00-1.2601975249082220e+00j
-+1.8521958553280000e+00+1.2601975249082220e+00j
-+1.8197653300065935e+00-1.9494562062795735e+00j
-+1.8197653300065935e+00+1.9494562062795735e+00j
-'''
 
-
+# change this kernel before plotting
 def kernel(x):
     return np.exp(-x * x / 4)
 
 
-def split(r):
+def split(r: str):
     split_r = r.strip().split('\n')
-    m = split_r[:len(split_r) // 2]
-    s = split_r[len(split_r) // 2:]
-    m_complex = []
-    s_complex = []
-    for i in m:
-        try:
-            m_complex.append(complex(i))
-        except ValueError:
-            pass
-    for i in s:
-        try:
-            s_complex.append(complex(i))
-        except ValueError:
-            pass
+    regex = re.compile(r'([+\-]\d+\.\d+e[+\-]\d+){2}j')
+    items = [i for i in split_r if regex.match(i)]
+    if len(items) % 2 != 0:
+        print('something wrong with the output')
+        return None
+
+    m_complex = [complex(i) for i in items[:len(items) // 2]]
+    s_complex = [complex(i) for i in items[len(items) // 2:]]
     return np.array(m_complex), np.array(s_complex)
 
 
-def plotter():
+def plotter(output: str):
+    if (result := split(output)) is None:
+        return
     x = np.linspace(0, 5, 401)
     yy = kernel(x)
     y = np.zeros(len(x), dtype=complex)
-    for ml, sl in zip(*split(weights)):
+    for ml, sl in zip(*result):
         y += ml * np.exp(-sl * x)
 
     fig = plt.figure(figsize=(6, 4))
@@ -93,5 +71,32 @@ def plotter():
     plt.show()
 
 
+@click.command()
+@click.option('-n', default=30, help='number of terms')
+@click.option('-nc', default=4, help='number of exponents')
+@click.option('-d', default=512, help='number of precision digits')
+@click.option('-q', default=500, help='quadrature order')
+@click.option('-e', default=1e-8, help='tolerance')
+@click.option('-k', default=None, help='file name of kernel function')
+@click.option('-exe', default=None, help='path of vpmr executable')
+def execute(n, nc, d, q, e, k, exe):
+    if not exe:
+        exe = 'vpmr'
+
+    if exists(exe):
+        exe = os.path.abspath(exe)
+    elif which(exe) is None:
+        print('cannot find the vpmr executable')
+        return
+
+    command = [exe, '-n', n, '-nc', nc, '-d', d, '-q', q, '-e', str(e)]
+    if k:
+        command.extend(['-k', k])
+    result = subprocess.check_output(command).decode('utf-8')
+    print(result)
+    plotter(result)
+
+
 if __name__ == '__main__':
-    plotter()
+    execute()
+    # make a command line tool using click

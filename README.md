@@ -131,19 +131,6 @@ S =
 Running time: 7 s.
 ```
 
-#### Visualisation
-
-The `plotter` folder contains a Python script to plot the result.
-
-It is necessary to have `matplotlib` and `numpy` available in, for example, the virtual environment.
-
-Copy and paste the `M` and `S` values to `weights` variable in `plotter/plotter.py` and run the script to plot the
-result.
-
-For the above example, the result is:
-
-![exp(-x^2/4)](example.png)
-
 #### Arbitrary Kernel
 
 ```bash
@@ -153,22 +140,55 @@ echo "exp(-t*t/8)" > kernel.txt
 
 ![exp(-x^2/8)](arbitrary.png)
 
+#### Visualisation
+
+The `plotter` folder contains a Python script to plot the result.
+
+It is necessary to have `click`, `matplotlib` and `numpy` available in, for example, the virtual environment.
+
+The usage is similar:
+
+```text
+Usage: plotter.py [OPTIONS]
+
+Options:
+  -n INTEGER   number of terms
+  -nc INTEGER  number of exponents
+  -d INTEGER   number of precision digits
+  -q INTEGER   quadrature order
+  -e FLOAT     tolerance
+  -k TEXT      file name of kernel function
+  -exe TEXT    path of vpmr executable
+  --help       Show this message and exit.
+```
+
+> **Note**
+> Remember to change the kernel function so that the plot is meaningful.
+> ```python
+> # change this kernel before plotting
+> def kernel(x):
+>     return np.exp(-x * x / 4)
+> ```
+
+For the above example, the result is:
+
+![exp(-x^2/4)](example.png)
+
 ## Binary
 
 The binary requires available `gmp`, `mpfr` and `tbb` libraries.
 
 ```bash
-vpmr/cmake-build-release on  master [!] via △ v3.26.0 
-❯ ldd vpmr 
-        linux-vdso.so.1 (0x00007ffcf3121000)
-        libgmp.so.10 => /lib64/libgmp.so.10 (0x00007f72087e8000)
-        libmpfr.so.6 => /lib64/libmpfr.so.6 (0x00007f7208736000)
-        libtbb.so.2 => /lib64/libtbb.so.2 (0x00007f72086f2000)
-        libstdc++.so.6 => /lib64/libstdc++.so.6 (0x00007f7208400000)
-        libm.so.6 => /lib64/libm.so.6 (0x00007f7208320000)
-        libgcc_s.so.1 => /lib64/libgcc_s.so.1 (0x00007f72086d0000)
-        libc.so.6 => /lib64/libc.so.6 (0x00007f7208143000)
-        /lib64/ld-linux-x86-64.so.2 (0x00007f72088a1000)
+❯ ldd vpmr
+     linux-vdso.so.1 (0x00007ffcf3121000)
+     libgmp.so.10 => /lib64/libgmp.so.10 (0x00007f72087e8000)
+     libmpfr.so.6 => /lib64/libmpfr.so.6 (0x00007f7208736000)
+     libtbb.so.2 => /lib64/libtbb.so.2 (0x00007f72086f2000)
+     libstdc++.so.6 => /lib64/libstdc++.so.6 (0x00007f7208400000)
+     libm.so.6 => /lib64/libm.so.6 (0x00007f7208320000)
+     libgcc_s.so.1 => /lib64/libgcc_s.so.1 (0x00007f72086d0000)
+     libc.so.6 => /lib64/libc.so.6 (0x00007f7208143000)
+     /lib64/ld-linux-x86-64.so.2 (0x00007f72088a1000)
 ```
 
 The distributed `appimage` is portable.
