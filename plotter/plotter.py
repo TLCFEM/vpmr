@@ -43,33 +43,36 @@ def split(r: str):
     return np.array(m_complex), np.array(s_complex)
 
 
-def plotter(output: str):
+def plotter(output: str, save: str):
     if (result := split(output)) is None:
         return
-    x = np.linspace(0, 20, 401)
+    x = np.linspace(0, 10, 401)
     yy = kernel(x)
     y = np.zeros(len(x), dtype=complex)
     for ml, sl in zip(*result):
         y += ml * np.exp(-sl * x)
 
     fig = plt.figure(figsize=(6, 4))
-    plt.plot(x, yy, 'b-', label='kernel', linewidth=2)
-    plt.plot(x, y.real, 'r--', label='approximation', linewidth=3)
 
-    plt.xlabel('t')
-    plt.ylabel('f(t)')
-    plt.legend(loc='lower left')
+    ax1 = plt.gca()
+    ax1.plot(x, yy, 'b-', label='kernel', linewidth=2)
+    ax1.plot(x, y.real, 'r', linestyle='dashdot', label='approximation', linewidth=3)
+    ax1.set_xlabel('time $t$')
+    ax1.set_ylabel('kernel function $g(t)$')
+    ax1.legend(loc='upper right', handlelength=4)
 
     ax2 = plt.twinx()
-    ax2.plot(x, np.abs(yy - y), 'g-', label='error', linewidth=1)
-    # ax2.plot(x, y.imag, 'g--', label='imaginary', linewidth=1)
+    ax2.plot(x, np.abs(yy - y), 'g--', label='absolute error', linewidth=1)
     ax2.set_yscale('log')
-    ax2.set_ylabel('Absolute Error')
+    ax2.set_ylabel('absolute error')
+    ax2.legend(loc='center right')
 
-    plt.title('Approximation of the kernel via VPMR')
-    plt.legend(loc='lower right')
-    plt.tight_layout()
+    # plt.title('Approximation of the kernel via VPMR')
+    plt.xlim(np.min(x), np.max(x))
+    plt.tight_layout(pad=.05)
     plt.show()
+    if save:
+        fig.savefig(save)
 
 
 @click.command()
@@ -80,7 +83,8 @@ def plotter(output: str):
 @click.option('-e', default=1e-8, help='tolerance')
 @click.option('-k', default=None, help='file name of kernel function')
 @click.option('-exe', default=None, help='path of vpmr executable')
-def execute(n, nc, d, q, e, k, exe):
+@click.option('--output', '-o', default=None, help='save plot to file')
+def execute(n, nc, d, q, e, k, exe, output):
     if not exe:
         exe = 'vpmr'
 
@@ -95,9 +99,8 @@ def execute(n, nc, d, q, e, k, exe):
         command.extend(['-k', k])
     result = subprocess.check_output(command).decode('utf-8')
     print(result)
-    plotter(result)
+    plotter(result, output)
 
 
 if __name__ == '__main__':
     execute()
-    # make a command line tool using click
