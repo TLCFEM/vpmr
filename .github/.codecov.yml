@@ -1,0 +1,13 @@
+coverage:
+  range: 80..90
+  round: up
+  precision: 4
+parsers:
+  gcov:
+    branch_detection:
+      conditional: no
+      loop: no
+      method: no
+      macro: no
+ignore:
+  - "src/BigInt.hpp"
