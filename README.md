@@ -1,6 +1,6 @@
 # VPMR C++ Implementation
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7770194.svg)](https://doi.org/10.5281/zenodo.7770194)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7770193.svg)](https://doi.org/10.5281/zenodo.7770193)
 
 [![gplv3-or-later](https://www.gnu.org/graphics/gplv3-or-later.svg)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 

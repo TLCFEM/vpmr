@@ -230,12 +230,12 @@ std::tuple<cx_vec, cx_vec> vpmr() {
 
     auto ID = sort_index(M);
     for(int I = int(ID.size()) - 1; I >= 0; --I)
-        if(norm(M(ID[I])) < std::numeric_limits<double>::epsilon())
+        if(norm(M(ID[I])) < TOL)
             ID.erase(ID.begin() + I);
         else
             break;
 
-    if(abs(W(0)) < std::numeric_limits<double>::epsilon()) return std::make_tuple(M(ID), -S(ID));
+    if(abs(W(0)) < TOL) return std::make_tuple(M(ID), -S(ID));
 
     cx_vec MM = cx_vec::Zero(long(ID.size()) + 1), SS = cx_vec::Zero(long(ID.size()) + 1);
     MM(0) = W(0);
