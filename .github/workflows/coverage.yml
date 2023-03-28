@@ -21,7 +21,9 @@ jobs:
           sed -i 's/3.24/3.13/g' CMakeLists.txt
           mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug ..
           make -j"$(nproc)"
-          ./vpmr
+          ./vpmr -h
+          echo "exp(-t^2/2)" > k
+          ./vpmr -nc 5 -n 20 -d 100 -q 400 -e 1e-9 -k k
           for SRC in `find . | egrep '\.o'`; do gcov -n $SRC > /dev/null; done
       - name: Upload
         uses: codecov/codecov-action@v3
