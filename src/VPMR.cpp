@@ -34,6 +34,7 @@ using namespace mpfr;
 using namespace Eigen;
 
 bool OUTPUT_W = false;              // output W
+bool OUTPUT_EIG = false;            // output eigenvalues
 int NC = 4;                         // maximum exponent
 int N = 10;                         // number of terms
 int DIGIT = 512;                    // number of digits
@@ -136,6 +137,10 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
     const auto SVD = BDCSVD<mat, ComputeFullU>(S.transpose() * L);
     const auto& U = SVD.matrixU();
     const auto& SIG = SVD.singularValues();
+    if(OUTPUT_EIG) {
+        std::cout << "SIGMA = \n";
+        for(auto I = 0; I < SIG.size(); ++I) std::cout << SIG(I).toString() << '\n';
+    }
 
     // step 7
     const auto P = pos(SIG);
