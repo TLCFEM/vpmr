@@ -23,6 +23,12 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
 endif ()
 
+include(CheckIncludeFile)
+CHECK_INCLUDE_FILE("Windows.h" HAVE_WINDOWS_H)
+IF (HAVE_WINDOWS_H)
+    add_definitions(-DHAVE_WINDOWS_H)
+ENDIF ()
+
 add_executable(vpmr src/VPMR.cpp)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND MINGW)

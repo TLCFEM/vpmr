@@ -29,6 +29,9 @@
 #include "Gauss.hpp"
 #include "unsupported/Eigen/MPRealSupport"
 #include "unsupported/Eigen/MatrixFunctions"
+#ifdef HAVE_WINDOWS_H
+#include <Windows.h>
+#endif
 
 using namespace mpfr;
 using namespace Eigen;
@@ -266,6 +269,11 @@ int print_helper() {
 }
 
 int main(const int argc, const char** argv) {
+#ifdef HAVE_WINDOWS_H
+    SetConsoleCP(CP_UTF8);
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+
     const auto start = std::chrono::high_resolution_clock::now();
 
     for(auto I = 1; I < argc; ++I) {
