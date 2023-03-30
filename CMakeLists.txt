@@ -25,6 +25,6 @@ endif ()
 
 add_executable(vpmr src/VPMR.cpp)
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND MINGW)
     target_compile_options(${PROJECT_NAME} PRIVATE "-Wa,-mbig-obj")
 endif ()
