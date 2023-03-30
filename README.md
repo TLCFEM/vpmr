@@ -28,35 +28,46 @@ the [original](https://github.com/ZXGao97/VPMR) MATLAB implementation for more d
 ### Compile
 
 > **Warning**
-> The application relies on `eigen` and `exprtk`, which are very heavy usage of templates.
-> The compilation would take minutes and around 1 GB memory.
+> The application relies on `eigen` and `exprtk`, which depend on very heavy usage of templates.
+> The compilation would take minutes and around 2 GB memory.
 
-The following is based on Fedora. For Windows users, please use WSL.
-Native support is hard as porting dependencies to Windows is cumbersome.
+#### Windows
 
-1. Install compiler, `cmake` and `git`.
-   ```bash
-   sudo dnf install gcc g++ gfortran cmake git -y
-   ```
-2. Install `tbb`, `gmp` and `mpfr` packages.
-   ```bash
-   sudo dnf install tbb-devel mpfr-devel gmp-devel -y
-   ```
-3. Initialise submodules.
-   ```bash
-   git submodule update --init --recursive
-   ```
-4. Configure and compile.
-   ```bash
-   cmake -DCMAKE_BUILD_TYPE=Release .
-   make
-   ```
+Use the following instructions based on [MSYS2](https://www.msys2.org/), or follow the Linux instructions below with
+WSL.
+
+```bash
+# install necessary packages
+pacman -S git mingw-w64-x86_64-cmake mingw-w64-x86_64-tbb mingw-w64-x86_64-gcc mingw-w64-x86_64-ninja mingw-w64-x86_64-gmp mingw-w64-x86_64-mpfr
+# clone the repository
+git clone --depth 1 https://github.com/TLCFEM/vpmr.git
+# initialise submodules
+cd vpmr
+git submodule update --init --recursive
+# configure and compile
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release .
+ninja
+```
+
+#### Linux
+
+The following is based on Fedora.
+
+```bash
+sudo dnf install gcc g++ gfortran cmake git -y
+sudo dnf install tbb-devel mpfr-devel gmp-devel -y
+git clone --depth 1 https://github.com/TLCFEM/vpmr.git
+cd vpmr
+git submodule update --init --recursive
+cmake -DCMAKE_BUILD_TYPE=Release .
+make
+```
 
 ### Use
 
 #### Provide Kernel
 
-It is necessary to provide kernel function in a text file.
+It is necessary to provide the kernel function in a text file.
 The file should contain the kernel function expressed as a function of variable `t`.
 
 The `exprtk` is used to parse the expression and compute the value.

@@ -9,7 +9,14 @@ include_directories(mpreal)
 include_directories(exprtk)
 include_directories(exprtk-custom-types)
 
-link_libraries(gmp mpfr tbb)
+if (MINGW)
+    find_package(TBB REQUIRED)
+    link_libraries(TBB::tbb)
+else ()
+    link_libraries(tbb)
+endif ()
+
+link_libraries(gmp mpfr)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     # add coverage
@@ -17,3 +24,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif ()
 
 add_executable(vpmr src/VPMR.cpp)
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(${PROJECT_NAME} PRIVATE "-Wa,-mbig-obj")
+endif ()
