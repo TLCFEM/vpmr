@@ -133,10 +133,12 @@ long pos(const vec& A) {
 
 std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec& C) {
     // step 3
+    std::cout << "[2/6] Solving Lyapunov equation...\n";
     const mat S = lyap(A.asDiagonal(), -B * B.transpose()).llt().matrixL();
     const mat L = lyap(A.asDiagonal(), -C * C.transpose()).llt().matrixL();
 
     // step 4
+    std::cout << "[3/6] Solving SVD...\n";
     const auto SVD = BDCSVD<mat, ComputeFullU>(S.transpose() * L);
     const auto& U = SVD.matrixU();
     const auto& SIG = SVD.singularValues();
@@ -146,6 +148,7 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
     }
 
     // step 7
+    std::cout << "[4/6] Transforming...\n";
     const auto P = pos(SIG);
     if(P == SIG.size())
         throw std::invalid_argument("No solution found, try to increase tolerance (e) or number of terms (n).");
@@ -159,6 +162,7 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
     const auto LUT = T.lu();
 
     // step 6
+    std::cout << "[5/6] Solving eigen decomposition...\n";
     const auto EIGEN = EigenSolver<mat>(LUT.solve(A.asDiagonal() * T).block(0, 0, P, P));
     // step 8
     const auto X = EIGEN.eigenvectors();
@@ -220,7 +224,12 @@ std::tuple<cx_vec, cx_vec> vpmr() {
     const auto quad = Quadrature(QUAD_ORDER);
 
     vec W = vec::Zero(2 * N);
-    for(auto I = 0; I < W.size(); ++I) W(I) = weight(quad, I);
+    for(auto I = 0; I < W.size();) {
+        W(I) = weight(quad, I);
+        std::cout << "\r[1/6] Computing weights... [" << ++I << '/' << W.size() << ']' << std::flush;
+    }
+    std::cout << std::showpos << std::setprecision(16) << '\n';
+
     if(OUTPUT_W) {
         std::cout << "W = \n";
         for(auto I = 0; I < W.size(); ++I) std::cout << W(I).toString() << '\n';
@@ -242,6 +251,8 @@ std::tuple<cx_vec, cx_vec> vpmr() {
             ID.erase(ID.begin() + I);
         else
             break;
+
+    std::cout << "[6/6] Done.\n\n";
 
     if(abs(W(0)) < TOL) return std::make_tuple(M(ID), -S(ID));
 
@@ -344,8 +355,6 @@ int main(const int argc, const char** argv) {
     std::cout << " precision = " << DIGIT << ".\n";
     std::cout << " tolerance = " << TOL.toDouble() << ".\n";
     std::cout << "    kernel = " << KERNEL << ".\n\n";
-
-    std::cout << std::scientific << std::showpos << std::setprecision(16);
 
     try {
         // run VPMR algorithm
