@@ -27,7 +27,7 @@ from matplotlib import pyplot as plt
 
 # change this kernel before plotting
 def kernel(x):
-    return np.exp(-x * x / 4)
+    return np.exp(-x ** 2 / 4)
 
 
 def split(r: str):
@@ -76,17 +76,16 @@ def plotter(output: str, save: str):
 
 
 @click.command()
-@click.option('-n', default=30, help='number of terms')
-@click.option('-nc', default=4, help='number of exponents')
-@click.option('-d', default=512, help='number of precision digits')
+@click.option('-n', default=20, help='number of terms')
 @click.option('-q', default=500, help='quadrature order')
+@click.option('-d', default=100, help='number of precision digits')
+@click.option('-nc', default=4, help='controls the maximum exponents')
 @click.option('-e', default=1e-8, help='tolerance')
-@click.option('-k', default=None, help='file name of kernel function')
-@click.option('-exe', default=None, help='path of vpmr executable')
-@click.option('--output', '-o', default=None, help='save plot to file')
-def execute(n, nc, d, q, e, k, exe, output):
-    if not exe:
-        exe = 'vpmr'
+@click.option('-o', default='', help='save plot to file')
+@click.option('-k', default='', help='file name of kernel function')
+@click.option('--exe', default='', help='path to vpmr executable')
+def execute(n, nc, d, q, e, k, exe, o):
+    exe = exe if exe else 'vpmr'
 
     if exists(exe):
         exe = os.path.abspath(exe)
@@ -99,7 +98,7 @@ def execute(n, nc, d, q, e, k, exe, output):
         command.extend(['-k', k])
     result = subprocess.check_output(command).decode('utf-8')
     print(result)
-    plotter(result, output)
+    plotter(result, o)
 
 
 if __name__ == '__main__':

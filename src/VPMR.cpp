@@ -42,6 +42,7 @@ int NC = 4;                         // maximum exponent
 int N = 10;                         // number of terms
 int DIGIT = 512;                    // number of digits
 int QUAD_ORDER = 500;               // number of quadrature points
+int SCALE = 6;                      // scaling
 mpreal TOL = mpreal("1E-8", DIGIT); // tolerance
 std::string KERNEL = "exp(-t*t/4)"; // default kernel
 
@@ -148,7 +149,7 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
     const auto P = pos(SIG);
     std::cout << "[4/6] Transforming (P=" << P << ")...\n";
     if(P == SIG.size())
-        std::cout << "WARNING: No eigenvalue is smaller than the given tolerance.\n";
+        std::cout << "WARNING: No singular value is smaller than the given tolerance.\n";
 
     // step 5
     auto SS = SIG;
@@ -156,7 +157,7 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
 
     // step 5
     const mat T = S * U * SS.asDiagonal();
-    const auto LUT = T.lu();
+    const auto LUT = T.fullPivLu();
 
     // step 6
     std::cout << "[5/6] Solving eigen decomposition...\n";
@@ -266,12 +267,15 @@ int print_helper() {
     std::cout << "--> \xF0\x9F\xA5\xB7 VPMR C++ Implementation <--\n\n";
     std::cout << "Usage: vpmr [options]\n\n";
     std::cout << "Options:\n\n";
-    std::cout << "   -nc <int>    controls the maximum exponent (default: 4)\n";
     std::cout << "   -n <int>     number of terms (default: 10)\n";
     std::cout << "   -d <int>     number of digits (default: 512)\n";
     std::cout << "   -q <int>     quadrature order (default: 500)\n";
+    std::cout << "   -m <int>     digit multiplier (default: 6)\n";
+    std::cout << "   -nc <int>    controls the maximum exponent (default: 4)\n";
     std::cout << "   -e <float>   tolerance (default: 1E-8)\n";
     std::cout << "   -k <string>  file name of kernel function (default: exp(-t^2/4))\n";
+    std::cout << "   -s           print singular values\n";
+    std::cout << "   -w           print weights\n";
     std::cout << "   -h           print this help message\n";
     return 0;
 }
@@ -298,10 +302,14 @@ int main(const int argc, const char** argv) {
         }
         else if(token == "-q")
             QUAD_ORDER = std::stoi(argv[++I]);
+        else if(token == "-m")
+            SCALE = std::stoi(argv[++I]);
         else if(token == "-e")
             TOL = mpreal(argv[++I]);
         else if(token == "-w")
             OUTPUT_W = true;
+        else if(token == "-s")
+            OUTPUT_EIG = true;
         else if(token == "-h")
             return print_helper();
         else if(token == "-k") {
@@ -326,7 +334,7 @@ int main(const int argc, const char** argv) {
     BigInt comb_max = comb(2 * N, N);
     int comb_digit = 0;
     while((comb_max /= 2) > 0) ++comb_digit;
-    comb_digit *= 4;
+    comb_digit *= SCALE;
 
     if(!has_digit)
         DIGIT = comb_digit;

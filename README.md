@@ -63,24 +63,7 @@ cmake -DCMAKE_BUILD_TYPE=Release .
 make
 ```
 
-### Use
-
-#### Provide Kernel
-
-It is necessary to provide the kernel function in a text file.
-The file should contain the kernel function expressed as a function of variable `t`.
-
-The `exprtk` is used to parse the expression and compute the value.
-The provided kernel function must be valid and supported by `exprtk`.
-
-For example, to compute the approximation of `exp(-t^2/8)`, one can create a file `kernel.txt` with the following
-content:
-
-```text
-exp(-t*t/8)
-```
-
-#### Usage
+### Usage
 
 All available options are:
 
@@ -89,12 +72,15 @@ Usage: vpmr [options]
 
 Options:
 
-   -nc <int>    number of exponent (default: 4)
    -n <int>     number of terms (default: 10)
    -d <int>     number of digits (default: 512)
    -q <int>     quadrature order (default: 500)
+   -m <int>     digit multiplier (default: 6)
+   -nc <int>    controls the maximum exponent (default: 4)
    -e <float>   tolerance (default: 1E-8)
    -k <string>  file name of kernel function (default: exp(-t^2/4))
+   -s           print singular values
+   -w           print weights
    -h           print this help message
 ```
 
@@ -113,44 +99,66 @@ Using the following parameters:
         nc = 4.
          n = 30.
      order = 500.
- precision = 512.
+ precision = 336.
  tolerance = 1.0000e-08.
     kernel = exp(-t*t/4).
 
+[1/6] Computing weights... [60/60]
+[2/6] Solving Lyapunov equation...
+[3/6] Solving SVD...
+[4/6] Transforming (P=+9)...
+[5/6] Solving eigen decomposition...
+[6/6] Done.
+
 M = 
-+1.0589202279681926e-11+0.0000000000000000e+00j
--5.4905134221689715e-03+2.2104939243740062e-03j
--5.4905134221689715e-03-2.2104939243740062e-03j
-+1.1745193571738943e+01-5.7707212536725188e-153j
--5.5143304351134397e+00-5.7204056791636839e+00j
++1.1745193571738943e+01-1.4261645574068720e-100j
 -5.5143304351134397e+00+5.7204056791636839e+00j
+-5.5143304351134397e+00-5.7204056791636839e+00j
 -1.6161617424833762e-02+2.3459542440459513e+00j
 -1.6161617424833762e-02-2.3459542440459513e+00j
-+1.6338578576177487e-01-1.9308431539218418e-01j
 +1.6338578576177487e-01+1.9308431539218418e-01j
++1.6338578576177487e-01-1.9308431539218418e-01j
+-5.4905134221689715e-03+2.2104939243740062e-03j
+-5.4905134221689715e-03-2.2104939243740062e-03j
 S = 
-+0.0000000000000000e+00+0.0000000000000000e+00j
-+1.7655956664692953e+00-2.7555720406099038e+00j
-+1.7655956664692953e+00+2.7555720406099038e+00j
 +1.8757961592204051e+00-0.0000000000000000e+00j
-+1.8700580506914817e+00-6.2013413918954552e-01j
 +1.8700580506914817e+00+6.2013413918954552e-01j
++1.8700580506914817e+00-6.2013413918954552e-01j
 +1.8521958553280000e+00-1.2601975249082220e+00j
 +1.8521958553280000e+00+1.2601975249082220e+00j
-+1.8197653300065935e+00-1.9494562062795735e+00j
 +1.8197653300065935e+00+1.9494562062795735e+00j
++1.8197653300065935e+00-1.9494562062795735e+00j
++1.7655956664692953e+00-2.7555720406099038e+00j
++1.7655956664692953e+00+2.7555720406099038e+00j
 
-Running time: 7 s.
+Running time: 3 s.
 ```
+
+![exp(-t^2/4)](example.png)
 
 #### Arbitrary Kernel
 
-```bash
-echo "exp(-t*t/8)" > kernel.txt
- ./vpmr -n 60 -k kernel.txt -nc 6
+For arbitrary kernel, it is necessary to provide the kernel function in a text file.
+The file should contain the kernel expressed as a function of variable `t`.
+
+The `exprtk` is used to parse the expression and compute the value.
+The provided kernel function must be valid and supported by `exprtk`.
+
+For example, to compute the approximation of `exp(-t^2/10)`, one can create a file `kernel.txt` with the following
+content:
+
+```text
+exp(-t*t/10)
 ```
 
-![exp(-x^2/8)](arbitrary.png)
+In the following, the kernel function is echoed to a file and then used as an input to the application.
+
+```bash
+echo "exp(-t*t/10)" > kernel.txt
+ ./vpmr -n 60 -k kernel.txt -e 1e-12
+```
+
+![exp(-t^2/10)](arbitrary.png)
 
 #### Visualisation
 
@@ -165,12 +173,13 @@ Usage: plotter.py [OPTIONS]
 
 Options:
   -n INTEGER   number of terms
-  -nc INTEGER  number of exponents
-  -d INTEGER   number of precision digits
   -q INTEGER   quadrature order
+  -d INTEGER   number of precision digits
+  -nc INTEGER  controls the maximum exponents
   -e FLOAT     tolerance
+  -o TEXT      save plot to file
   -k TEXT      file name of kernel function
-  -exe TEXT    path of vpmr executable
+  --exe TEXT   path to vpmr executable
   --help       Show this message and exit.
 ```
 
@@ -181,10 +190,6 @@ Options:
 > def kernel(x):
 >     return np.exp(-x * x / 4)
 > ```
-
-For the above example, the result is:
-
-![exp(-x^2/4)](example.png)
 
 ## Binary
 
