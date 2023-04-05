@@ -93,6 +93,9 @@ public:
             this->_r[i] = -this->_r[degree - i - 1];
             this->_w[i] = this->_w[degree - i - 1];
         }
+
+        for(size_t i = 0; i < degree; ++i)
+            this->_r[i] = MP_PI_HALF * this->_r[i] + MP_PI_HALF;
     }
 
     [[nodiscard]] mpreal root(int i) const { return this->_r[i]; }
@@ -109,15 +112,15 @@ public:
 
     template<typename Function>
     mpreal integrate(Function&& f) const {
-        //        mpreal sum{0, DIGIT};
-        //        for (int i = 0; i < int(poly.degree); ++i)
-        //            sum += poly.weight(i) * f(i, MP_PI_HALF * poly.root(i) + MP_PI_HALF);
-        //        return sum;
-        return tbb::parallel_reduce(
+        // mpreal sum{0, DIGIT};
+        // for (int i = 0; i < int(poly.degree); ++i)
+        //     sum += poly.weight(i) * f(i, poly.root(i));
+        // return sum;
+        return tbb::parallel_deterministic_reduce(
             tbb::blocked_range<int>(0, int(poly.degree)), mpreal(0, DIGIT),
             [&](const tbb::blocked_range<int>& r, mpreal running_total) {
                 for(auto i = r.begin(); i < r.end(); ++i)
-                    running_total += poly.weight(i) * f(i, MP_PI_HALF * poly.root(i) + MP_PI_HALF);
+                    running_total += poly.weight(i) * f(i, poly.root(i));
                 return running_total;
             },
             std::plus<>());

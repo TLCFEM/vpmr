@@ -113,22 +113,19 @@ using vec = Eigen::Matrix<mpreal, Dynamic, 1>;
 using cx_vec = Eigen::Matrix<std::complex<mpreal>, Dynamic, 1>;
 
 // step 2
-mat lyap(const mat& A, const mat& C) {
-    return Eigen::internal::matrix_function_solve_triangular_sylvester(A, A, C);
-}
+mat lyap(const mat& A, const mat& C) { return Eigen::internal::matrix_function_solve_triangular_sylvester(A, A, C); }
 
 long pos(const vec& A) {
-    const auto target = TOL / 2;
     auto sum = mpreal(0, DIGIT);
     long P = 0;
     for(auto I = A.size() - 1; I >= 0; --I) {
         sum += A(I);
-        if(sum > target) {
-            P = I + 1;
+        if(sum > TOL) {
+            P = I;
             break;
         }
     }
-    return P;
+    return P + 1;
 }
 
 std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec& C) {
@@ -148,14 +145,14 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
     }
 
     // step 7
-    std::cout << "[4/6] Transforming...\n";
     const auto P = pos(SIG);
+    std::cout << "[4/6] Transforming (P=" << P << ")...\n";
     if(P == SIG.size())
-        throw std::invalid_argument("No solution found, try to increase tolerance (e) or number of terms (n).");
+        std::cout << "WARNING: No eigenvalue is smaller than the given tolerance.\n";
 
     // step 5
     auto SS = SIG;
-    for(auto I = 0; I < SS.size(); ++I) SS(I) = pow(SS(I), -.5);
+    for(auto I = 0; I < SS.size(); ++I) SS(I) = pow(std::max(std::numeric_limits<mpreal>::epsilon(), SS(I)), -.5);
 
     // step 5
     const mat T = S * U * SS.asDiagonal();
@@ -269,7 +266,7 @@ int print_helper() {
     std::cout << "--> \xF0\x9F\xA5\xB7 VPMR C++ Implementation <--\n\n";
     std::cout << "Usage: vpmr [options]\n\n";
     std::cout << "Options:\n\n";
-    std::cout << "   -nc <int>    number of exponent (default: 4)\n";
+    std::cout << "   -nc <int>    controls the maximum exponent (default: 4)\n";
     std::cout << "   -n <int>     number of terms (default: 10)\n";
     std::cout << "   -d <int>     number of digits (default: 512)\n";
     std::cout << "   -q <int>     quadrature order (default: 500)\n";
@@ -287,6 +284,7 @@ int main(const int argc, const char** argv) {
 
     const auto start = std::chrono::high_resolution_clock::now();
 
+    bool has_digit = false;
     for(auto I = 1; I < argc; ++I) {
         const auto token = std::string(argv[I]);
 
@@ -294,8 +292,10 @@ int main(const int argc, const char** argv) {
             NC = std::stoi(argv[++I]);
         else if(token == "-n")
             N = std::stoi(argv[++I]);
-        else if(token == "-d")
+        else if(token == "-d") {
             DIGIT = std::stoi(argv[++I]);
+            has_digit = true;
+        }
         else if(token == "-q")
             QUAD_ORDER = std::stoi(argv[++I]);
         else if(token == "-e")
@@ -326,8 +326,12 @@ int main(const int argc, const char** argv) {
     BigInt comb_max = comb(2 * N, N);
     int comb_digit = 0;
     while((comb_max /= 2) > 0) ++comb_digit;
-    if((comb_digit *= 9) >= DIGIT) {
-        std::cout << "Too few digits to hold combinatorial number, resetting digits to " << comb_digit << ".\n";
+    comb_digit *= 4;
+
+    if(!has_digit)
+        DIGIT = comb_digit;
+    else if(comb_digit >= DIGIT) {
+        std::cout << "WARNING: Too few digits to hold combinatorial number, resetting digits to " << comb_digit << ".\n";
         DIGIT = comb_digit;
     }
 
@@ -355,6 +359,8 @@ int main(const int argc, const char** argv) {
     std::cout << " precision = " << DIGIT << ".\n";
     std::cout << " tolerance = " << TOL.toDouble() << ".\n";
     std::cout << "    kernel = " << KERNEL << ".\n\n";
+
+    TOL /= 2;
 
     try {
         // run VPMR algorithm
