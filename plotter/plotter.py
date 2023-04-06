@@ -67,7 +67,6 @@ def plotter(output: str, save: str):
     ax2.set_ylabel('absolute error')
     ax2.legend(loc='center right')
 
-    # plt.title('Approximation of the kernel via VPMR')
     plt.xlim(np.min(x), np.max(x))
     plt.tight_layout(pad=.05)
     plt.show()
