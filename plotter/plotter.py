@@ -75,7 +75,7 @@ def plotter(output: str, save: str):
 
 
 @click.command()
-@click.option('-n', default=20, help='number of terms')
+@click.option('-n', default=30, help='number of terms')
 @click.option('-q', default=500, help='quadrature order')
 @click.option('-d', default=100, help='number of precision digits')
 @click.option('-nc', default=4, help='controls the maximum exponents')
