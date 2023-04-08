@@ -130,6 +130,11 @@ long pos(const vec& A) {
 }
 
 std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec& C) {
+    // account for 4^j here separately
+    vec W = A;
+    auto ONE = mpreal(1, DIGIT);
+    for(auto I = 0; I < W.size(); ++I) W(I) = (ONE <<= 2);
+
     // step 3
     std::cout << "[2/6] Solving Lyapunov equation...\n";
     const mat S = lyap(A.asDiagonal(), -B * B.transpose()).llt().matrixL();
@@ -137,7 +142,7 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
 
     // step 4
     std::cout << "[3/6] Solving SVD...\n";
-    const auto SVD = BDCSVD<mat, ComputeFullU>(S.transpose() * L);
+    const auto SVD = BDCSVD<mat, ComputeFullU>(S.transpose() * W.asDiagonal() * L);
     const auto& U = SVD.matrixU();
     const auto& SIG = SVD.singularValues();
     if(OUTPUT_EIG) {
@@ -153,7 +158,13 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
 
     // step 5
     auto SS = SIG;
-    for(auto I = 0; I < SS.size(); ++I) SS(I) = pow(std::max(std::numeric_limits<mpreal>::epsilon(), SS(I)), -.5);
+    for(auto I = 0; I < SS.size(); ++I)
+        if(SS(I) > std::numeric_limits<mpreal>::epsilon())
+            SS(I) = pow(SS(I), -.5);
+        else {
+            std::cout << "WARNING: Need to increase digits.\n";
+            SS(I) = pow(std::numeric_limits<mpreal>::epsilon(), -.5);
+        }
 
     // step 5
     const mat T = S * U * SS.asDiagonal();
@@ -167,7 +178,7 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
 
     // step 9
     const cx_vec BB = LUT.solve(B).head(P);
-    const cx_vec CC = ((C.transpose() * T).head(P) * X).transpose();
+    const cx_vec CC = ((C.transpose() * W.asDiagonal() * T).head(P) * X).transpose();
 
     return std::make_tuple(X.fullPivLu().solve(BB).cwiseProduct(CC), EIGEN.eigenvalues());
 }
@@ -201,7 +212,9 @@ mpreal weight(const Quadrature& quad, const int j) {
                 mpreal(comb(N + l + j, N + l - j).to_string(), DIGIT) * k_hat(N + l);
     }
 
-    return result * pow(mpreal(4, DIGIT), j);
+    // unlike the original paper, we do not multiply 4^j here
+    // to avoid multiplication of large complex numbers and large powers of 4
+    return result;
 }
 
 std::vector<long> sort_index(const cx_vec& v) {
@@ -334,7 +347,7 @@ int main(const int argc, const char** argv) {
     BigInt comb_max = comb(2 * N, N);
     int comb_digit = 0;
     while((comb_max /= 2) > 0) ++comb_digit;
-    comb_digit *= SCALE;
+    comb_digit = std::max(5 * N, SCALE * comb_digit);
 
     if(!has_digit)
         DIGIT = comb_digit;
