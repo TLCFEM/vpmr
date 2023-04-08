@@ -47,7 +47,9 @@ def plotter(output: str, save: str):
     if (result := split(output)) is None:
         return
     x = np.linspace(0, 10, 401)
-    yy = kernel(x)
+    yy = np.zeros(len(x))
+    for i in range(len(x)):
+        yy[i] = kernel(x[i])
     y = np.zeros(len(x), dtype=complex)
     for ml, sl in zip(*result):
         y += ml * np.exp(-sl * x)
