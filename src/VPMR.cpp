@@ -21,6 +21,7 @@
 #include <mpfr/exprtk_mpfr_adaptor.hpp>
 #include <mutex>
 #include <tbb/concurrent_unordered_map.h>
+#include <tbb/parallel_for.h>
 #include <vector>
 #include "BigInt.hpp"
 #include "Cache.hpp"
@@ -129,6 +130,15 @@ long pos(const vec& A) {
     return P + 1;
 }
 
+mat lyap_rhs(const vec& M) {
+    mat A(M.size(), M.size());
+    tbb::parallel_for(0, static_cast<int>(M.size()), [&](const int I) {
+        A(I, I) = -M(I) * M(I);
+        for(auto J = I + 1; J < M.size(); ++J) A(I, J) = A(J, I) = -M(I) * M(J);
+    });
+    return A;
+}
+
 std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec& C) {
     // account for 4^j here separately
     vec W = A;
@@ -137,8 +147,8 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
 
     // step 3
     std::cout << "[2/6] Solving Lyapunov equation...\n";
-    const mat S = lyap(A.asDiagonal(), -B * B.transpose()).llt().matrixL();
-    const mat L = lyap(A.asDiagonal(), -C * C.transpose()).llt().matrixL();
+    const mat S = lyap(A.asDiagonal(), lyap_rhs(B)).llt().matrixL();
+    const mat L = lyap(A.asDiagonal(), lyap_rhs(C)).llt().matrixL();
 
     // step 4
     std::cout << "[3/6] Solving SVD...\n";
@@ -178,7 +188,7 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
 
     // step 9
     const cx_vec BB = LUT.solve(B).head(P);
-    const cx_vec CC = ((C.transpose() * W.asDiagonal() * T).head(P) * X).transpose();
+    const cx_vec CC = ((C.cwiseProduct(W).transpose() * T).head(P) * X).transpose();
 
     return std::make_tuple(X.fullPivLu().solve(BB).cwiseProduct(CC), EIGEN.eigenvalues());
 }
