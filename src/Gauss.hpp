@@ -76,7 +76,7 @@ private:
 public:
     explicit LegendrePolynomial(const size_t D)
         : degree(D > 2 ? D : 2), _r(std::make_unique<mpreal[]>(degree)), _w(std::make_unique<mpreal[]>(degree)) {
-        tbb::parallel_for(0lu, degree / 2 + 1, [&](const size_t i) {
+        tbb::parallel_for(size_t(0), degree / 2 + 1, [&](const size_t i) {
             mpreal dr{1, DIGIT};
 
             Evaluation eval(cos(MP_PI * mpreal(4 * i + 3, DIGIT) / mpreal(4 * degree + 2, DIGIT)), degree);
@@ -95,7 +95,7 @@ public:
             this->_w[i] = this->_w[degree - i - 1];
         });
 
-        tbb::parallel_for(0lu, degree, [&](const size_t i) { this->_r[i] = MP_PI_HALF * this->_r[i] + MP_PI_HALF; });
+        tbb::parallel_for(size_t(0), degree, [&](const size_t i) { this->_r[i] = MP_PI_HALF * this->_r[i] + MP_PI_HALF; });
     }
 
     [[nodiscard]] mpreal root(int i) const { return this->_r[i]; }
