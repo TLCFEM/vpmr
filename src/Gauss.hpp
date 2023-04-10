@@ -22,6 +22,7 @@
 #include <iostream>
 #include <memory>
 #include <tbb/blocked_range.h>
+#include <tbb/parallel_for.h>
 #include <tbb/parallel_reduce.h>
 #include "mpreal.h"
 
@@ -75,7 +76,7 @@ private:
 public:
     explicit LegendrePolynomial(const size_t D)
         : degree(D > 2 ? D : 2), _r(std::make_unique<mpreal[]>(degree)), _w(std::make_unique<mpreal[]>(degree)) {
-        for(size_t i = 0; i < degree / 2 + 1; ++i) {
+        tbb::parallel_for(0lu, degree / 2 + 1, [&](const size_t i) {
             mpreal dr{1, DIGIT};
 
             Evaluation eval(cos(MP_PI * mpreal(4 * i + 3, DIGIT) / mpreal(4 * degree + 2, DIGIT)), degree);
@@ -87,15 +88,14 @@ public:
 
             this->_r[i] = eval.x();
             this->_w[i] = mpreal(2, DIGIT) / ((mpreal(1, DIGIT) - eval.x() * eval.x()) * eval.d() * eval.d());
-        }
+        });
 
-        for(size_t i = degree - 1; i >= degree / 2; --i) {
+        tbb::parallel_for(degree / 2, degree, [&](const size_t i) {
             this->_r[i] = -this->_r[degree - i - 1];
             this->_w[i] = this->_w[degree - i - 1];
-        }
+        });
 
-        for(size_t i = 0; i < degree; ++i)
-            this->_r[i] = MP_PI_HALF * this->_r[i] + MP_PI_HALF;
+        tbb::parallel_for(0lu, degree, [&](const size_t i) { this->_r[i] = MP_PI_HALF * this->_r[i] + MP_PI_HALF; });
     }
 
     [[nodiscard]] mpreal root(int i) const { return this->_r[i]; }
