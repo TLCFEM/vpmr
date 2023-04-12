@@ -208,8 +208,7 @@ mpreal weight(const Quadrature& quad, const int j) {
 
     if(j > N) {
         for(auto l = j - N; l < N; ++l)
-            result += sgn_bit(N + l - j) * mpreal(N - l, DIGIT) / mpreal(N, DIGIT) *
-                mpreal(N + l, DIGIT) / mpreal(N + l + j, DIGIT) *
+            result += sgn_bit(N + l - j) * mpreal((N - l) * (N + l), DIGIT) / mpreal(N * (N + l + j), DIGIT) *
                 mpreal(comb(N + l + j, N + l - j).to_string(), DIGIT) * k_hat(N + l);
     }
     else {
@@ -217,8 +216,7 @@ mpreal weight(const Quadrature& quad, const int j) {
             result += sgn_bit(l - j) * mpreal(l, DIGIT) / mpreal(l + j, DIGIT) *
                 mpreal(comb(l + j, l - j).to_string(), DIGIT) * k_hat(l);
         for(auto l = 1; l < N; ++l)
-            result += sgn_bit(N + l - j) * mpreal(N - l, DIGIT) / mpreal(N, DIGIT) *
-                mpreal(N + l, DIGIT) / mpreal(N + l + j, DIGIT) *
+            result += sgn_bit(N + l - j) * mpreal((N - l) * (N + l), DIGIT) / mpreal(N * (N + l + j), DIGIT) *
                 mpreal(comb(N + l + j, N + l - j).to_string(), DIGIT) * k_hat(N + l);
     }
 
