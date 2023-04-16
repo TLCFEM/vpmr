@@ -1,0 +1,13 @@
+diff --git a/Eigen/src/SVD/BDCSVD.h b/Eigen/src/SVD/BDCSVD.h
+index a69fdcabb..4658dcb96 100644
+--- a/Eigen/src/SVD/BDCSVD.h
++++ b/Eigen/src/SVD/BDCSVD.h
+@@ -183,7 +183,7 @@ public:
+    *
+    * \param matrix the matrix to decompose
+    */
+-  BDCSVD(const MatrixType& matrix) : m_algoswap(16), m_numIters(0) {
++  BDCSVD(const MatrixType& matrix) : m_algoswap(4), m_numIters(0) {
+     compute_impl(matrix, internal::get_computation_options(Options));
+   }
+ 

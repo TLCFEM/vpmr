@@ -16,9 +16,11 @@ jobs:
           install: git mingw-w64-x86_64-cmake mingw-w64-x86_64-tbb mingw-w64-x86_64-gcc mingw-w64-x86_64-ninja mingw-w64-x86_64-gmp mingw-w64-x86_64-mpfr mingw-w64-x86_64-7zip
       - name: Clone
         uses: actions/checkout@v3
-      - shell: msys2 {0}
+      - name: Compile
+        shell: msys2 {0}
         run: |
           git submodule update --init --recursive
+          cd eigen && git apply --ignore-space-change --ignore-whitespace ../patch_size.patch && cd ..
           sed -i 's/3.24/3.13/g' CMakeLists.txt
           mkdir build && cd build
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
