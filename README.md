@@ -5,6 +5,11 @@
 
 [![gplv3-or-later](https://www.gnu.org/graphics/gplv3-or-later.svg)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
+## Call For Help
+
+- [ ] **parallel SVD algorithm**: `eigen` only provides sequential SVD
+- [ ] **alternative integration**: currently only Gauss-Legendre quadrature is available
+ 
 ## What Is This?
 
 This is a C++ implementation of the VPMR algorithm to compute the approximation of arbitrary smooth kernel.
