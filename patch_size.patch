@@ -1,8 +1,17 @@
 diff --git a/Eigen/src/SVD/BDCSVD.h b/Eigen/src/SVD/BDCSVD.h
-index a69fdcabb..4658dcb96 100644
+index a69fdcabb..744e977bf 100644
 --- a/Eigen/src/SVD/BDCSVD.h
 +++ b/Eigen/src/SVD/BDCSVD.h
-@@ -183,7 +183,7 @@ public:
+@@ -33,6 +33,8 @@
+ #include <iostream>
+ #endif
+ 
++#include <tbb/parallel_reduce.h>
++
+ namespace Eigen {
+ 
+ #ifdef EIGEN_BDCSVD_DEBUG_VERBOSE
+@@ -183,7 +185,7 @@ public:
     *
     * \param matrix the matrix to decompose
     */
@@ -11,3 +20,20 @@ index a69fdcabb..4658dcb96 100644
      compute_impl(matrix, internal::get_computation_options(Options));
    }
  
+@@ -833,6 +835,16 @@ template <typename MatrixType, int Options>
+ typename BDCSVD<MatrixType, Options>::RealScalar BDCSVD<MatrixType, Options>::secularEq(
+     RealScalar mu, const ArrayRef& col0, const ArrayRef& diag, const IndicesRef& perm, const ArrayRef& diagShifted,
+     RealScalar shift) {
++  return tbb::parallel_deterministic_reduce(
++      tbb::blocked_range<Index>(Index(0), perm.size()), RealScalar(1),
++      [&](const tbb::blocked_range<Index>& r, RealScalar running_total) {
++        for (auto i = r.begin(); i < r.end(); ++i) {
++          Index j = perm(i);
++          running_total += (col0(j) / (diagShifted(j) - mu)) * (col0(j) / (diag(j) + shift + mu));
++        }
++        return running_total;
++      },
++      std::plus<>());
+   Index m = perm.size();
+   RealScalar res = Literal(1);
+   for(Index i=0; i<m; ++i)
