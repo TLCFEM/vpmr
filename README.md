@@ -7,7 +7,7 @@
 
 ## Call For Help
 
-- [ ] **parallel SVD algorithm**: `eigen` only provides sequential SVD
+- [ ] **more performant parallel SVD algorithm**: `eigen` only provides sequential SVD
 - [ ] **alternative integration**: currently only Gauss-Legendre quadrature is available
  
 ## What Is This?
@@ -49,6 +49,8 @@ git clone --depth 1 https://github.com/TLCFEM/vpmr.git
 # initialise submodules
 cd vpmr
 git submodule update --init --recursive
+# apply patch to enable parallel evaluation of some loops in SVD
+cd eigen && git apply --ignore-space-change --ignore-whitespace ../patch_size.patch && cd ..
 # configure and compile
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release .
 ninja
@@ -64,6 +66,7 @@ sudo dnf install tbb-devel mpfr-devel gmp-devel -y
 git clone --depth 1 https://github.com/TLCFEM/vpmr.git
 cd vpmr
 git submodule update --init --recursive
+cd eigen && git apply --ignore-space-change --ignore-whitespace ../patch_size.patch && cd ..
 cmake -DCMAKE_BUILD_TYPE=Release .
 make
 ```
