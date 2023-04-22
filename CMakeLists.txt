@@ -23,10 +23,10 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif ()
 
 include(CheckIncludeFile)
-CHECK_INCLUDE_FILE("Windows.h" HAVE_WINDOWS_H)
-IF (HAVE_WINDOWS_H)
+check_include_file("Windows.h" HAVE_WINDOWS_H)
+if (HAVE_WINDOWS_H)
     add_definitions(-DHAVE_WINDOWS_H)
-ENDIF ()
+endif ()
 
 add_executable(vpmr src/VPMR.cpp)
 
