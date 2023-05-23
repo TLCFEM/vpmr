@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.24)
 project(vpmr)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -DNDEBUG")
 
 include_directories(eigen)
 include_directories(eigen/unsupported)
