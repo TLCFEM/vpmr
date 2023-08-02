@@ -35,6 +35,7 @@ the [original](https://github.com/ZXGao97/VPMR) MATLAB implementation for more d
 > **Warning**
 > The application relies on `eigen` and `exprtk`, which depend on very heavy usage of templates.
 > The compilation would take minutes and around 2 GB memory.
+> You need to install libraries `gmp`, `mpfr` and `tbb` before compiling.
 
 #### Windows
 
