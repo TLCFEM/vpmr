@@ -32,8 +32,8 @@ jobs:
           echo "  app_info:" >> AppImageBuilder.yml
           echo "    id: io.github.tlcfem.vpmr" >> AppImageBuilder.yml
           echo "    name: vpmr" >> AppImageBuilder.yml
-          echo "    icon: application-vnd.appimage" >> AppImageBuilder.yml
           echo "    version: 0.1.0" >> AppImageBuilder.yml
+          echo "    icon: vpmr" >> AppImageBuilder.yml
           echo "    exec: usr/bin/vpmr" >> AppImageBuilder.yml
           echo "    exec_args: \$@" >> AppImageBuilder.yml
           echo "  files:" >> AppImageBuilder.yml
@@ -72,7 +72,7 @@ jobs:
           wget -q https://github.com/AppImageCrafters/appimage-builder/releases/download/v1.1.0/appimage-builder-1.1.0-x86_64.AppImage
           chmod +x appimage-builder-1.1.0-x86_64.AppImage
 
-          ./linuxdeploy-x86_64.AppImage --appimage-extract-and-run --appdir AppDir --executable build/vpmr
+          ./linuxdeploy-x86_64.AppImage --appimage-extract-and-run --appdir AppDir --executable build/vpmr -i vpmr.svg
           ./appimage-builder-1.1.0-x86_64.AppImage --appimage-extract-and-run --recipe AppImageBuilder.yml --skip-tests
           
           chmod +x vpmr-0.1.0-x86_64.AppImage
