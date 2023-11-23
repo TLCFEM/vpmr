@@ -378,7 +378,7 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
     while((comb_max /= 2) > 0) ++comb_digit;
     comb_digit = std::max(5 * N, SCALE * comb_digit);
 
-    if(!has_digit)
+    if(512 == d)
         DIGIT = comb_digit;
     else if(comb_digit >= DIGIT) {
         std::cout << "WARNING: Too few digits to hold combinatorial number, resetting digits to " << comb_digit << ".\n";
