@@ -11,6 +11,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Setup
+        run: |
+          git submodule update --init --recursive
+          cd eigen && git apply ../patch_size.patch && cd ..
       - name: Build
         run: pipx run build --sdist
       - name: Check
@@ -30,6 +34,7 @@ jobs:
       - name: Setup
         run: |
           git submodule update --init --recursive
+          cd eigen && git apply ../patch_size.patch && cd ..
       - name: CI Build Wheel
         uses: pypa/cibuildwheel@v2.16
         env:
