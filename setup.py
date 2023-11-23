@@ -4,7 +4,7 @@ from datetime import datetime
 
 # noinspection PyTypeChecker
 setup(
-    name="vpmr",
+    name="pyvpmr",
     version=datetime.now().strftime("%y%m%d"),
     author="Theodore Chang",
     author_email="tlcfem@gmail.com",
@@ -12,7 +12,7 @@ setup(
     description="The VPMR Algorithm",
     ext_modules=[
         Pybind11Extension(
-            "vpmr",
+            "pyvpmr",
             ["src/VPMR.cpp"],
             include_dirs=["eigen", "eigen/unsupported", "mpreal", "exprtk", "exprtk-custom-types"],
             libraries=["mpfr", "gmp", "tbb"],

@@ -42,7 +42,7 @@ On RPM-based Linux distributions (using `dnf`), if you are:
 Then install the package with `pip`.
 
 ```
-pip install vpmr
+pip install pyvpmr
 ```
 
 ### Compile

@@ -35,7 +35,7 @@ endif ()
 add_executable(vpmr src/VPMR.cpp)
 
 find_package(Python3 REQUIRED COMPONENTS Development Interpreter)
-message(STATUS "Python3 version: ${Python3_VERSION}")
+message(STATUS "Python3: ${Python3_VERSION}")
 include_directories(${Python3_INCLUDE_DIRS})
 add_subdirectory(pybind11)
 
