@@ -466,6 +466,17 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
 PYBIND11_MODULE(pyvpmr, m) {
     m.doc() = "The VPMR Algorithm";
 
-    m.def("vpmr", &vpmr_wrapper, pybind11::call_guard<pybind11::gil_scoped_release>(), pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 6, pybind11::arg("nc") = 4, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "");
+    m.def(
+        "vpmr", &vpmr_wrapper, pybind11::call_guard<pybind11::gil_scoped_release>(),
+        pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 6, pybind11::arg("nc") = 4, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "",
+        "The VPMR Algorithm.\n\n"
+        "Parameters:\n\n"
+        "    n (int): number of terms (default: 10)\n"
+        "    d (int): number of precision bits (default: 512)\n"
+        "    q (int): quadrature order (default: 500)\n"
+        "    m (int): precision multiplier (default: 6)\n"
+        "   nc (int): maximum exponent (default: 4)\n"
+        "    e (float): tolerance (default: 1E-8)\n"
+        "    k (string): kernel function (default: exp(-t^2/4))\n");
 }
 #endif
