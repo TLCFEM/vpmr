@@ -32,7 +32,7 @@ jobs:
           echo "  app_info:" >> AppImageBuilder.yml
           echo "    id: io.github.tlcfem.vpmr" >> AppImageBuilder.yml
           echo "    name: vpmr" >> AppImageBuilder.yml
-          echo "    version: ${{ env.VPMR_VERSION }}" >> AppImageBuilder.yml
+          echo "    version: '${{ env.VPMR_VERSION }}'" >> AppImageBuilder.yml
           echo "    icon: vpmr" >> AppImageBuilder.yml
           echo "    exec: usr/bin/vpmr" >> AppImageBuilder.yml
           echo "    exec_args: \$@" >> AppImageBuilder.yml

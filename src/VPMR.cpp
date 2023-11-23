@@ -464,6 +464,8 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
 }
 
 PYBIND11_MODULE(pyvpmr, m) {
+    m.doc() = "The VPMR Algorithm";
+
     m.def("vpmr", &vpmr_wrapper, pybind11::call_guard<pybind11::gil_scoped_release>(), pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 6, pybind11::arg("nc") = 4, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "");
 }
 #endif
