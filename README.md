@@ -158,7 +158,7 @@ S =
 Running time: 3 s.
 ```
 
-![exp(-t^2/4)](example.png)
+![exp(-t^2/4)](resource/example.png)
 
 #### Arbitrary Kernel
 
@@ -182,7 +182,7 @@ echo "exp(-t*t/10)" > kernel.txt
  ./vpmr -n 60 -k kernel.txt -e 1e-12
 ```
 
-![exp(-t^2/10)](arbitrary.png)
+![exp(-t^2/10)](resource/arbitrary.png)
 
 #### Visualisation
 

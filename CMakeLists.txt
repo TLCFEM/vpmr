@@ -43,7 +43,7 @@ pybind11_add_module(pyvpmr src/VPMR.cpp)
 target_compile_definitions(pyvpmr PRIVATE PYVPMR)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_sources(${PROJECT_NAME} PRIVATE vpmr.rc)
+    target_sources(${PROJECT_NAME} PRIVATE resource/vpmr.rc)
     if (MINGW)
         target_compile_options(${PROJECT_NAME} PRIVATE "-Wa,-mbig-obj")
         target_compile_options(pyvpmr PRIVATE "-Wa,-mbig-obj")
