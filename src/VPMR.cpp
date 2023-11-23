@@ -15,27 +15,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 
-#include <algorithm>
-#include <chrono>
-#include <iostream>
-#include <mpfr/exprtk_mpfr_adaptor.hpp>
-#include <mutex>
-#include <tbb/concurrent_unordered_map.h>
+#include "VPMR.h"
+#include <iomanip>
 #include <tbb/parallel_for.h>
-#include <vector>
 #include "BigInt.hpp"
 #include "Cache.hpp"
-#include "Eigen/Core"
-#include "Eigen/Eigenvalues"
+#include "Eigen/MatrixFunctions"
 #include "Gauss.hpp"
-#include "unsupported/Eigen/MPRealSupport"
-#include "unsupported/Eigen/MatrixFunctions"
 #ifdef HAVE_WINDOWS_H
 #include <Windows.h>
 #endif
-
-using namespace mpfr;
-using namespace Eigen;
 
 bool OUTPUT_W = false;              // output W
 bool OUTPUT_EIG = false;            // output eigenvalues
@@ -62,57 +51,12 @@ BigInt comb_impl(unsigned n, unsigned k) {
     return comb(n - 1, k - 1) + comb(n - 1, k);
 }
 
-// kernel function
-class Expression {
-    mpreal time;
-
-    exprtk::symbol_table<mpreal> symbol_table;
-    exprtk::expression<mpreal> expression;
-    exprtk::parser<mpreal> parser;
-
-    std::mutex eval_mutex;
-
-public:
-    bool compile() {
-        symbol_table.add_variable("t", time);
-        symbol_table.add_constants();
-        expression.register_symbol_table(symbol_table);
-        return parser.compile(KERNEL, expression);
-    }
-
-    mpreal value(const mpreal& t) {
-        std::scoped_lock lock(eval_mutex);
-        time = t;
-        return expression.value();
-    }
-};
-
-// integrand in eq. 2.2 --- K(t)cos(jt)
-class Integrand {
-    static Expression* expression;
-    static tbb::concurrent_unordered_map<int, mpreal> value;
-
-    const int j;
-
-public:
-    explicit Integrand(const int J)
-        : j(J) {}
-
-    static void set_expression(Expression* E) { expression = E; }
-
-    mpreal operator()(const int i, const mpreal& r) const {
-        if(value.find(i) == value.end())
-            value.insert(std::make_pair(i, expression->value(-NC * log((mpreal(1, DIGIT) + cos(r)) >> 1))));
-        return value[i] * cos(j * r);
-    }
-};
-
 Expression* Integrand::expression = nullptr;
 tbb::concurrent_unordered_map<int, mpreal> Integrand::value(QUAD_ORDER);
 
-using mat = Eigen::Matrix<mpreal, Dynamic, Dynamic>;
-using vec = Eigen::Matrix<mpreal, Dynamic, 1>;
-using cx_vec = Eigen::Matrix<std::complex<mpreal>, Dynamic, 1>;
+using mat = Eigen::Matrix<mpreal, Eigen::Dynamic, Eigen::Dynamic>;
+using vec = Eigen::Matrix<mpreal, Eigen::Dynamic, 1>;
+using cx_vec = Eigen::Matrix<std::complex<mpreal>, Eigen::Dynamic, 1>;
 
 // step 2
 mat lyap(const mat& A, const mat& C) { return Eigen::internal::matrix_function_solve_triangular_sylvester(A, A, C); }
@@ -152,7 +96,7 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
 
     // step 4
     std::cout << "[3/6] Solving SVD...\n";
-    const auto SVD = BDCSVD<mat, ComputeFullU>(S.transpose() * W.asDiagonal() * L);
+    const auto SVD = Eigen::BDCSVD<mat, Eigen::ComputeFullU>(S.transpose() * W.asDiagonal() * L);
     const auto& U = SVD.matrixU();
     const auto& SIG = SVD.singularValues();
     if(OUTPUT_EIG) {
@@ -182,7 +126,7 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
 
     // step 6
     std::cout << "[5/6] Solving eigen decomposition...\n";
-    const auto EIGEN = EigenSolver<mat>(LUT.solve(A.asDiagonal() * T).block(0, 0, P, P));
+    const auto EIGEN = Eigen::EigenSolver<mat>(LUT.solve(A.asDiagonal() * T).block(0, 0, P, P));
     // step 8
     const auto X = EIGEN.eigenvectors();
 
