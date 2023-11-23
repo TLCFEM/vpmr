@@ -12,8 +12,7 @@ AppDir:\n\
   app_info:\n\
     id: io.github.tlcfem.vpmr\n\
     name: vpmr\n\
-    icon: application-vnd.appimage\n\
-    version: 0.1.0\n\
+    icon: vpmr\n\
     exec: usr/bin/vpmr\n\
     exec_args: $@\n\
   files:\n\
@@ -50,7 +49,7 @@ RUN chmod +x linuxdeploy-x86_64.AppImage
 RUN wget -q https://github.com/AppImageCrafters/appimage-builder/releases/download/v1.1.0/appimage-builder-1.1.0-x86_64.AppImage
 RUN chmod +x appimage-builder-1.1.0-x86_64.AppImage
 
-RUN ./linuxdeploy-x86_64.AppImage --appimage-extract-and-run --appdir AppDir --executable build/vpmr
+RUN ./linuxdeploy-x86_64.AppImage --appimage-extract-and-run --appdir AppDir --executable build/vpmr -i resource/vpmr.svg
 RUN ./appimage-builder-1.1.0-x86_64.AppImage --appimage-extract-and-run --recipe AppImageBuilder.yml
 RUN chmod +x vpmr-0.1.0-x86_64.AppImage
 RUN ./vpmr-0.1.0-x86_64.AppImage --appimage-extract-and-run -h

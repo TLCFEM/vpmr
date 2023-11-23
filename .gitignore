@@ -1,7 +1,9 @@
-cmake-build-*/
-.idea/
-build/
-.vscode/
-plotter/venv
-plotter/*.egg-info
+*vpmr*.so
+*.egg-info
 .cache
+.idea/
+.vscode/
+build/
+cmake-build-*/
+plotter/venv
+wheelhouse

@@ -49,7 +49,7 @@ public:
 
         mpreal left{x}, right{1, DIGIT};
 
-        for(int i = 2; i <= degree; ++i) {
+        for(size_t i = 2; i <= degree; ++i) {
             this->_v = ((mpreal(2, DIGIT) * i - mpreal(1, DIGIT)) * x * left - (i - mpreal(1, DIGIT)) * right) / i;
 
             right = left;

@@ -30,6 +30,21 @@ the [original](https://github.com/ZXGao97/VPMR) MATLAB implementation for more d
 
 ## How To
 
+### Python Package
+
+> **Warning**
+> The Python module needs external libraries to be installed.
+
+On RPM-based Linux distributions (using `dnf`), if you are:
+1. compiling the application from source (or wheels are not available), `sudo dnf install -y gcc-c++ tbb-devel mpfr-devel gmp-devel`
+2. using the packaged binary (wheels are available), `sudo dnf install -y gmp mpfr tbb`
+
+Then install the package with `pip`.
+
+```
+pip install pyvpmr
+```
+
 ### Compile
 
 > **Warning**
@@ -143,7 +158,7 @@ S =
 Running time: 3 s.
 ```
 
-![exp(-t^2/4)](example.png)
+![exp(-t^2/4)](resource/example.png)
 
 #### Arbitrary Kernel
 
@@ -167,7 +182,7 @@ echo "exp(-t*t/10)" > kernel.txt
  ./vpmr -n 60 -k kernel.txt -e 1e-12
 ```
 
-![exp(-t^2/10)](arbitrary.png)
+![exp(-t^2/10)](resource/arbitrary.png)
 
 #### Visualisation
 

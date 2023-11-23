@@ -15,27 +15,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 
-#include <algorithm>
-#include <chrono>
-#include <iostream>
+#include <iomanip>
 #include <mpfr/exprtk_mpfr_adaptor.hpp>
 #include <mutex>
+#include <string>
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/parallel_for.h>
-#include <vector>
 #include "BigInt.hpp"
 #include "Cache.hpp"
 #include "Eigen/Core"
-#include "Eigen/Eigenvalues"
+#include "Eigen/MatrixFunctions"
 #include "Gauss.hpp"
-#include "unsupported/Eigen/MPRealSupport"
-#include "unsupported/Eigen/MatrixFunctions"
 #ifdef HAVE_WINDOWS_H
 #include <Windows.h>
 #endif
 
 using namespace mpfr;
-using namespace Eigen;
 
 bool OUTPUT_W = false;              // output W
 bool OUTPUT_EIG = false;            // output eigenvalues
@@ -110,9 +105,9 @@ public:
 Expression* Integrand::expression = nullptr;
 tbb::concurrent_unordered_map<int, mpreal> Integrand::value(QUAD_ORDER);
 
-using mat = Eigen::Matrix<mpreal, Dynamic, Dynamic>;
-using vec = Eigen::Matrix<mpreal, Dynamic, 1>;
-using cx_vec = Eigen::Matrix<std::complex<mpreal>, Dynamic, 1>;
+using mat = Eigen::Matrix<mpreal, Eigen::Dynamic, Eigen::Dynamic>;
+using vec = Eigen::Matrix<mpreal, Eigen::Dynamic, 1>;
+using cx_vec = Eigen::Matrix<std::complex<mpreal>, Eigen::Dynamic, 1>;
 
 // step 2
 mat lyap(const mat& A, const mat& C) { return Eigen::internal::matrix_function_solve_triangular_sylvester(A, A, C); }
@@ -152,7 +147,7 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
 
     // step 4
     std::cout << "[3/6] Solving SVD...\n";
-    const auto SVD = BDCSVD<mat, ComputeFullU>(S.transpose() * W.asDiagonal() * L);
+    const auto SVD = Eigen::BDCSVD<mat, Eigen::ComputeFullU>(S.transpose() * W.asDiagonal() * L);
     const auto& U = SVD.matrixU();
     const auto& SIG = SVD.singularValues();
     if(OUTPUT_EIG) {
@@ -182,7 +177,7 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
 
     // step 6
     std::cout << "[5/6] Solving eigen decomposition...\n";
-    const auto EIGEN = EigenSolver<mat>(LUT.solve(A.asDiagonal() * T).block(0, 0, P, P));
+    const auto EIGEN = Eigen::EigenSolver<mat>(LUT.solve(A.asDiagonal() * T).block(0, 0, P, P));
     // step 8
     const auto X = EIGEN.eigenvectors();
 
@@ -301,6 +296,7 @@ int print_helper() {
     return 0;
 }
 
+#ifndef PYVPMR
 int main(const int argc, const char** argv) {
 #ifdef HAVE_WINDOWS_H
     SetConsoleCP(CP_UTF8);
@@ -369,15 +365,17 @@ int main(const int argc, const char** argv) {
 
     TOL.setPrecision(DIGIT);
 
+    MP_PI = const_pi(2 * DIGIT);
+    MP_PI_HALF = MP_PI / 2;
+
+    TOL /= 2;
+
     Expression kernel;
     if(!kernel.compile()) {
         std::cerr << "Cannot compile kernel function: " << KERNEL << ".\n";
         return 1;
     }
     Integrand::set_expression(&kernel);
-
-    MP_PI = const_pi(2 * DIGIT);
-    MP_PI_HALF = MP_PI / 2;
 
     std::cout << std::scientific << std::setprecision(4);
 
@@ -386,10 +384,8 @@ int main(const int argc, const char** argv) {
     std::cout << "         n = " << N << ".\n";
     std::cout << "     order = " << QUAD_ORDER << ".\n";
     std::cout << " precision = " << DIGIT << ".\n";
-    std::cout << " tolerance = " << TOL.toDouble() << ".\n";
+    std::cout << " tolerance = " << (2 * TOL).toDouble() << ".\n";
     std::cout << "    kernel = " << KERNEL << ".\n\n";
-
-    TOL /= 2;
 
     try {
         // run VPMR algorithm
@@ -412,3 +408,75 @@ int main(const int argc, const char** argv) {
 
     return 0;
 }
+#else
+#include <pybind11/complex.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+
+std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>> vpmr_wrapper(
+    const int n, const int d, const int q, const int m, const int nc, const double e, const std::string& k) {
+    N = n;
+    DIGIT = d;
+    QUAD_ORDER = q;
+    SCALE = m;
+    NC = nc;
+    TOL = mpreal(e);
+    if(!k.empty()) KERNEL = k;
+
+    // check size
+    BigInt comb_max = comb(2 * N, N);
+    int comb_digit = 0;
+    while((comb_max /= 2) > 0) ++comb_digit;
+    comb_digit = std::max(5 * N, SCALE * comb_digit);
+
+    if(0 == d)
+        DIGIT = comb_digit;
+    else if(comb_digit >= DIGIT) {
+        std::cout << "WARNING: Too few digits to hold combinatorial number, resetting digits to " << comb_digit << ".\n";
+        DIGIT = comb_digit;
+    }
+
+    // set precision
+    mpreal::set_default_prec(DIGIT);
+
+    TOL.setPrecision(DIGIT);
+
+    MP_PI = const_pi(2 * DIGIT);
+    MP_PI_HALF = MP_PI / 2;
+
+    TOL /= 2;
+
+    std::vector<std::complex<double>> mm, ss;
+
+    Expression kernel;
+    if(!kernel.compile()) {
+        std::cerr << "Cannot compile kernel function: " << KERNEL << ".\n";
+        return {mm, ss};
+    }
+    Integrand::set_expression(&kernel);
+
+    const auto [M, S] = vpmr();
+
+    for(const auto& I : M) mm.emplace_back(I.real().toDouble(), I.imag().toDouble());
+    for(const auto& I : S) ss.emplace_back(I.real().toDouble(), I.imag().toDouble());
+
+    return {mm, ss};
+}
+
+PYBIND11_MODULE(pyvpmr, m) {
+    m.doc() = "The VPMR Algorithm";
+
+    m.def(
+        "vpmr", &vpmr_wrapper, pybind11::call_guard<pybind11::gil_scoped_release>(),
+        pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 6, pybind11::arg("nc") = 4, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "",
+        "The VPMR Algorithm.\n\n"
+        "Parameters:\n\n"
+        "    n (int): number of terms (default: 10)\n"
+        "    d (int): number of precision bits (default: 512)\n"
+        "    q (int): quadrature order (default: 500)\n"
+        "    m (int): precision multiplier (default: 6)\n"
+        "   nc (int): maximum exponent (default: 4)\n"
+        "    e (float): tolerance (default: 1E-8)\n"
+        "    k (string): kernel function (default: exp(-t^2/4))\n");
+}
+#endif

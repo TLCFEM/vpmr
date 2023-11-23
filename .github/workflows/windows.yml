@@ -16,6 +16,9 @@ jobs:
           install: git mingw-w64-x86_64-cmake mingw-w64-x86_64-tbb mingw-w64-x86_64-gcc mingw-w64-x86_64-ninja mingw-w64-x86_64-gmp mingw-w64-x86_64-mpfr mingw-w64-x86_64-7zip
       - name: Clone
         uses: actions/checkout@v3
+      - name: Version
+        run: |
+          echo ("VPMR_VERSION="+(get-date -format "yyMMdd")) >> $env:GITHUB_ENV
       - name: Compile
         shell: msys2 {0}
         run: |
@@ -38,13 +41,13 @@ jobs:
           cp /mingw64/bin/libmpfr-6.dll release
           cp /mingw64/bin/libtbb12.dll release
           cd release
-          7z a ../../vpmr-0.1.0-win.7z *
+          7z a ../../vpmr-${{ env.VPMR_VERSION }}-win.7z *
       - name: Release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: vpmr-0.1.0-win.7z
-          asset_name: vpmr-0.1.0-win.7z
+          file: vpmr-${{ env.VPMR_VERSION }}-win.7z
+          asset_name: vpmr-${{ env.VPMR_VERSION }}-win.7z
           tag: latest
           prerelease: false
           overwrite: true

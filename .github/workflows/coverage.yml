@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Setup
         run: |
-          sudo apt-get update && sudo apt-get install -y cmake git g++ libtbb-dev libmpfr-dev libgmp-dev
+          sudo apt-get update && sudo apt-get install -y cmake git g++ libtbb-dev libmpfr-dev libgmp-dev libpython3-dev python3 python3-distutils
       - name: Clone
         uses: actions/checkout@v3
       - name: Compile
@@ -25,6 +25,17 @@ jobs:
           echo "exp(-t^2/2)" > k
           ./vpmr -nc 5 -n 20 -d 100 -q 400 -e 1e-9 -k k -w -s
           for SRC in `find . | egrep '\.o'`; do gcov -n $SRC > /dev/null; done
+          python3 -c "import pyvpmr;print(pyvpmr.vpmr())"
+      - name: Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Requirements
+        run: python -m pip install --upgrade wheel setuptools
+      - name: Build
+        run: pip install --verbose .
+      - name: Test
+        run: python3 test/test.py
       - name: Upload
         uses: codecov/codecov-action@v3
         with:

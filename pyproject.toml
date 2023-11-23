@@ -1,0 +1,19 @@
+[build-system]
+requires = [
+    "setuptools",
+    "pybind11",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.cibuildwheel]
+archs = ["x86_64"]
+skip = ['*musl*']
+before-all = "dnf install -y gcc-c++ tbb-devel mpfr-devel gmp-devel"
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-i686-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+manylinux-ppc64le-image = "manylinux_2_28"
+manylinux-s390x-image = "manylinux_2_28"
+manylinux-pypy_x86_64-image = "manylinux_2_28"
+manylinux-pypy_i686-image = "manylinux_2_28"
+manylinux-pypy_aarch64-image = "manylinux_2_28"

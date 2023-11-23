@@ -9,6 +9,7 @@ include_directories(eigen/unsupported)
 include_directories(mpreal)
 include_directories(exprtk)
 include_directories(exprtk-custom-types)
+include_directories(pybind11/include)
 
 if (MINGW)
     find_package(TBB REQUIRED)
@@ -21,6 +22,8 @@ link_libraries(gmp mpfr)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
+elseif (UNIX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto=auto")
 endif ()
 
 include(CheckIncludeFile)
@@ -31,9 +34,18 @@ endif ()
 
 add_executable(vpmr src/VPMR.cpp)
 
+find_package(Python3 REQUIRED COMPONENTS Development Interpreter)
+message(STATUS "Python3: ${Python3_VERSION}")
+include_directories(${Python3_INCLUDE_DIRS})
+add_subdirectory(pybind11)
+
+pybind11_add_module(pyvpmr src/VPMR.cpp)
+target_compile_definitions(pyvpmr PRIVATE PYVPMR)
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_sources(${PROJECT_NAME} PRIVATE vpmr.rc)
+    target_sources(${PROJECT_NAME} PRIVATE resource/vpmr.rc)
     if (MINGW)
         target_compile_options(${PROJECT_NAME} PRIVATE "-Wa,-mbig-obj")
+        target_compile_options(pyvpmr PRIVATE "-Wa,-mbig-obj")
     endif ()
 endif ()

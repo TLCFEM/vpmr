@@ -1,0 +1,3 @@
+graft .
+prune .git
+recursive-exclude .github .gitlab .circleci
