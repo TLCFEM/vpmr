@@ -36,7 +36,7 @@ jobs:
       - name: CI Build Wheel
         uses: pypa/cibuildwheel@v2.16
         env:
-          CIBW_ARCHS_MACOS: auto universal2
+          CIBW_ARCHS: x86_64
       - name: Upload
         uses: actions/upload-artifact@v3
         with:
