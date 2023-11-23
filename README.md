@@ -32,7 +32,7 @@ the [original](https://github.com/ZXGao97/VPMR) MATLAB implementation for more d
 
 ### Python Package
 
-> **Warning**
+> [!WARNING]
 > The Python module needs external libraries to be installed.
 
 On RPM-based Linux distributions (using `dnf`), if you are:
@@ -47,7 +47,7 @@ pip install pyvpmr
 
 ### Compile
 
-> **Warning**
+> [!WARNING]
 > The application relies on `eigen` and `exprtk`, which depend on very heavy usage of templates.
 > The compilation would take minutes and around 2 GB memory.
 > You need to install libraries `gmp`, `mpfr` and `tbb` before compiling.
