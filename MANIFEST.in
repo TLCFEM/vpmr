@@ -1,1 +1,2 @@
 graft .
+global-exclude .git .github .gitlab
