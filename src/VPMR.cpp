@@ -15,16 +15,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 
-#include "VPMR.h"
 #include <iomanip>
+#include <mpfr/exprtk_mpfr_adaptor.hpp>
+#include <mutex>
+#include <string>
+#include <tbb/concurrent_unordered_map.h>
 #include <tbb/parallel_for.h>
 #include "BigInt.hpp"
 #include "Cache.hpp"
+#include "Eigen/Core"
 #include "Eigen/MatrixFunctions"
 #include "Gauss.hpp"
 #ifdef HAVE_WINDOWS_H
 #include <Windows.h>
 #endif
+
+using namespace mpfr;
 
 bool OUTPUT_W = false;              // output W
 bool OUTPUT_EIG = false;            // output eigenvalues
@@ -50,6 +56,51 @@ BigInt comb_impl(unsigned n, unsigned k) {
 
     return comb(n - 1, k - 1) + comb(n - 1, k);
 }
+
+// kernel function
+class Expression {
+    mpreal time;
+
+    exprtk::symbol_table<mpreal> symbol_table;
+    exprtk::expression<mpreal> expression;
+    exprtk::parser<mpreal> parser;
+
+    std::mutex eval_mutex;
+
+public:
+    bool compile() {
+        symbol_table.add_variable("t", time);
+        symbol_table.add_constants();
+        expression.register_symbol_table(symbol_table);
+        return parser.compile(KERNEL, expression);
+    }
+
+    mpreal value(const mpreal& t) {
+        std::scoped_lock lock(eval_mutex);
+        time = t;
+        return expression.value();
+    }
+};
+
+// integrand in eq. 2.2 --- K(t)cos(jt)
+class Integrand {
+    static Expression* expression;
+    static tbb::concurrent_unordered_map<int, mpreal> value;
+
+    const int j;
+
+public:
+    explicit Integrand(const int J)
+        : j(J) {}
+
+    static void set_expression(Expression* E) { expression = E; }
+
+    mpreal operator()(const int i, const mpreal& r) const {
+        if(value.find(i) == value.end())
+            value.insert(std::make_pair(i, expression->value(-NC * log((mpreal(1, DIGIT) + cos(r)) >> 1))));
+        return value[i] * cos(j * r);
+    }
+};
 
 Expression* Integrand::expression = nullptr;
 tbb::concurrent_unordered_map<int, mpreal> Integrand::value(QUAD_ORDER);
