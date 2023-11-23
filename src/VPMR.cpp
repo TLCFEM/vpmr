@@ -314,15 +314,17 @@ int main(const int argc, const char** argv) {
 
     TOL.setPrecision(DIGIT);
 
+    MP_PI = const_pi(2 * DIGIT);
+    MP_PI_HALF = MP_PI / 2;
+
+    TOL /= 2;
+
     Expression kernel;
     if(!kernel.compile()) {
         std::cerr << "Cannot compile kernel function: " << KERNEL << ".\n";
         return 1;
     }
     Integrand::set_expression(&kernel);
-
-    MP_PI = const_pi(2 * DIGIT);
-    MP_PI_HALF = MP_PI / 2;
 
     std::cout << std::scientific << std::setprecision(4);
 
@@ -331,10 +333,8 @@ int main(const int argc, const char** argv) {
     std::cout << "         n = " << N << ".\n";
     std::cout << "     order = " << QUAD_ORDER << ".\n";
     std::cout << " precision = " << DIGIT << ".\n";
-    std::cout << " tolerance = " << TOL.toDouble() << ".\n";
+    std::cout << " tolerance = " << (2 * TOL).toDouble() << ".\n";
     std::cout << "    kernel = " << KERNEL << ".\n\n";
-
-    TOL /= 2;
 
     try {
         // run VPMR algorithm
@@ -371,6 +371,29 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
     NC = nc;
     TOL = mpreal(e);
     if(!k.empty()) KERNEL = k;
+
+    // check size
+    BigInt comb_max = comb(2 * N, N);
+    int comb_digit = 0;
+    while((comb_max /= 2) > 0) ++comb_digit;
+    comb_digit = std::max(5 * N, SCALE * comb_digit);
+
+    if(!has_digit)
+        DIGIT = comb_digit;
+    else if(comb_digit >= DIGIT) {
+        std::cout << "WARNING: Too few digits to hold combinatorial number, resetting digits to " << comb_digit << ".\n";
+        DIGIT = comb_digit;
+    }
+
+    // set precision
+    mpreal::set_default_prec(DIGIT);
+
+    TOL.setPrecision(DIGIT);
+
+    MP_PI = const_pi(2 * DIGIT);
+    MP_PI_HALF = MP_PI / 2;
+
+    TOL /= 2;
 
     std::vector<std::complex<double>> mm, ss;
 
