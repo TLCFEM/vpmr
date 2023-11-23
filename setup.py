@@ -13,7 +13,7 @@ setup(
         Pybind11Extension(
             "pyvpmr",
             ["src/VPMR.cpp"],
-            include_dirs=["eigen", "eigen/unsupported", "mpreal", "exprtk", "exprtk-custom-types"],
+            include_dirs=["eigen", "eigen/unsupported", "mpreal", "exprtk", "exprtk-custom-types", "usr/include"],
             libraries=["mpfr", "gmp", "tbb"],
             define_macros=[("PYVPMR", 1)],
         ),
