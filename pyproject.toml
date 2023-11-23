@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.cibuildwheel]
 archs = ["x86_64"]
-before-all = "dnf install gcc-c++ tbb-devel mpfr-devel gmp-devel"
+before-all = "dnf install -y gcc-c++ tbb-devel mpfr-devel gmp-devel"
 manylinux-x86_64-image = "manylinux_2_28"
 manylinux-i686-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"
