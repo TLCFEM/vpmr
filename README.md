@@ -207,7 +207,7 @@ Options:
   --help       Show this message and exit.
 ```
 
-> **Note**
+> [!Note]
 > Remember to change the kernel function so that the plot is meaningful.
 > ```python
 > # change this kernel before plotting
