@@ -43,4 +43,5 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v3
         with:
+          name: pyvpmr
           path: wheelhouse/*.whl
