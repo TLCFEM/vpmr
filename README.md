@@ -33,9 +33,13 @@ the [original](https://github.com/ZXGao97/VPMR) MATLAB implementation for more d
 ### Python Package
 
 > **Warning**
-> The Python module needs external libraries and working compiler to be installed.
-> You need to install libraries `gmp`, `mpfr` and `tbb`.
-> For example: `dnf install -y gcc-c++ tbb-devel mpfr-devel gmp-devel`
+> The Python module needs external libraries to be installed.
+
+On RPM-based Linux distributions (using `dnf`), if you are:
+1. compiling the application from source (or wheels are not available), `sudo dnf install -y gcc-c++ tbb-devel mpfr-devel gmp-devel`
+2. using the packaged binary (wheels are available), `sudo dnf install -y gmp mpfr tbb`
+
+Then install the package with `pip`.
 
 ```
 pip install vpmr

@@ -1,3 +1,3 @@
-import pyvpmr
+from vpmr import vpmr
 
-print(pyvpmr.vpmr())
+print(vpmr(n=20))

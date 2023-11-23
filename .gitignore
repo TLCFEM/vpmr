@@ -1,8 +1,9 @@
+*vpmr*.so
+*.egg-info
 .cache
 .idea/
 .vscode/
 build/
 cmake-build-*/
-plotter/*.egg-info
 plotter/venv
-pyvpmr*
+wheelhouse

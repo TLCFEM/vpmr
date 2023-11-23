@@ -1,2 +1,3 @@
 graft .
-global-exclude .git .github .gitlab
+prune .git
+recursive-exclude .github .gitlab .circleci
