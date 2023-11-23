@@ -19,6 +19,7 @@ jobs:
       - name: Compile
         shell: msys2 {0}
         run: |
+          echo ("VPMR_VERSION="+(get-date -format "yyMMdd")) >> $env:GITHUB_ENV
           git submodule update --init --recursive
           cd eigen && git apply --ignore-space-change --ignore-whitespace ../patch_size.patch && cd ..
           sed -i 's/3.24/3.13/g' CMakeLists.txt
@@ -38,13 +39,13 @@ jobs:
           cp /mingw64/bin/libmpfr-6.dll release
           cp /mingw64/bin/libtbb12.dll release
           cd release
-          7z a ../../vpmr-0.1.0-win.7z *
+          7z a ../../vpmr-${{ env.VPMR_VERSION }}-win.7z *
       - name: Release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: vpmr-0.1.0-win.7z
-          asset_name: vpmr-0.1.0-win.7z
+          file: vpmr-${{ env.VPMR_VERSION }}-win.7z
+          asset_name: vpmr-${{ env.VPMR_VERSION }}-win.7z
           tag: latest
           prerelease: false
           overwrite: true

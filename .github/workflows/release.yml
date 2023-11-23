@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Setup
         run: |
-          echo "SP_TIME=daily-$(date +''%Y%m%d%H'')" >> $GITHUB_ENV
+          echo "VPMR_VERSION=$(date +''%y%m%d'')" >> $GITHUB_ENV
           apt-get update && apt-get install -y cmake git g++ libtbb-dev libmpfr-dev libgmp-dev libpython3-dev python3 python3-distutils wget gtk-update-icon-cache
       - name: Clone
         uses: actions/checkout@v3
@@ -32,7 +32,7 @@ jobs:
           echo "  app_info:" >> AppImageBuilder.yml
           echo "    id: io.github.tlcfem.vpmr" >> AppImageBuilder.yml
           echo "    name: vpmr" >> AppImageBuilder.yml
-          echo "    version: 0.1.0" >> AppImageBuilder.yml
+          echo "    version: ${{ env.VPMR_VERSION }}" >> AppImageBuilder.yml
           echo "    icon: vpmr" >> AppImageBuilder.yml
           echo "    exec: usr/bin/vpmr" >> AppImageBuilder.yml
           echo "    exec_args: \$@" >> AppImageBuilder.yml
@@ -75,14 +75,14 @@ jobs:
           ./linuxdeploy-x86_64.AppImage --appimage-extract-and-run --appdir AppDir --executable build/vpmr -i vpmr.svg
           ./appimage-builder-1.1.0-x86_64.AppImage --appimage-extract-and-run --recipe AppImageBuilder.yml --skip-tests
           
-          chmod +x vpmr-0.1.0-x86_64.AppImage
-          ./vpmr-0.1.0-x86_64.AppImage --appimage-extract-and-run -h
+          chmod +x vpmr-${{ env.VPMR_VERSION }}-x86_64.AppImage
+          ./vpmr-${{ env.VPMR_VERSION }}-x86_64.AppImage --appimage-extract-and-run -h
       - name: Release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: vpmr-0.1.0-x86_64.AppImage
-          asset_name: vpmr-0.1.0-x86_64.AppImage
+          file: vpmr-${{ env.VPMR_VERSION }}-x86_64.AppImage
+          asset_name: vpmr-${{ env.VPMR_VERSION }}-x86_64.AppImage
           tag: latest
           prerelease: false
           overwrite: true

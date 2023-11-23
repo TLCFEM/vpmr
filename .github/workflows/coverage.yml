@@ -25,7 +25,6 @@ jobs:
           echo "exp(-t^2/2)" > k
           ./vpmr -nc 5 -n 20 -d 100 -q 400 -e 1e-9 -k k -w -s
           for SRC in `find . | egrep '\.o'`; do gcov -n $SRC > /dev/null; done
-          python3 -c "import pyvpmr;print(pyvpmr.vpmr())"
       - name: Python
         uses: actions/setup-python@v4
         with:
