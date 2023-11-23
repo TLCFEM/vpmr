@@ -378,7 +378,7 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
     while((comb_max /= 2) > 0) ++comb_digit;
     comb_digit = std::max(5 * N, SCALE * comb_digit);
 
-    if(512 == d)
+    if(0 == d)
         DIGIT = comb_digit;
     else if(comb_digit >= DIGIT) {
         std::cout << "WARNING: Too few digits to hold combinatorial number, resetting digits to " << comb_digit << ".\n";
@@ -413,6 +413,6 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
 }
 
 PYBIND11_MODULE(pyvpmr, m) {
-    m.def("vpmr", &vpmr_wrapper, pybind11::call_guard<pybind11::gil_scoped_release>(), pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("d") = 512, pybind11::arg("q") = 500, pybind11::arg("m") = 6, pybind11::arg("nc") = 4, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "");
+    m.def("vpmr", &vpmr_wrapper, pybind11::call_guard<pybind11::gil_scoped_release>(), pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 6, pybind11::arg("nc") = 4, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "");
 }
 #endif
