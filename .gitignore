@@ -1,7 +1,8 @@
-cmake-build-*/
-.idea/
-build/
-.vscode/
-plotter/venv
-plotter/*.egg-info
 .cache
+.idea/
+.vscode/
+build/
+cmake-build-*/
+plotter/*.egg-info
+plotter/venv
+pyvpmr*

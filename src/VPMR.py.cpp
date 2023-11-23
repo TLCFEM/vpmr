@@ -24,23 +24,33 @@ using cx_vec = Eigen::Matrix<std::complex<mpreal>, Eigen::Dynamic, 1>;
 
 std::tuple<cx_vec, cx_vec> vpmr();
 
-std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>> vpmr_wrapper() {
+std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>> vpmr_wrapper(
+    const int n, const int d, const int q, const int m, const int nc, const double e, const std::string& k) {
+    N = n;
+    DIGIT = d;
+    QUAD_ORDER = q;
+    SCALE = m;
+    NC = nc;
+    TOL = mpreal(e);
+    if(!k.empty()) KERNEL = k;
+
+    std::vector<std::complex<double>> mm, ss;
+
     Expression kernel;
     if(!kernel.compile()) {
         std::cerr << "Cannot compile kernel function: " << KERNEL << ".\n";
-        throw std::runtime_error("Cannot compile kernel function.");
+        return {mm, ss};
     }
     Integrand::set_expression(&kernel);
 
     const auto [M, S] = vpmr();
 
-    std::vector<std::complex<double>> m(M.size()), s(S.size());
-    for(const auto& I : M) m.emplace_back(I.real().toDouble(), I.imag().toDouble());
-    for(const auto& I : S) s.emplace_back(I.real().toDouble(), I.imag().toDouble());
+    for(const auto& I : M) mm.emplace_back(I.real().toDouble(), I.imag().toDouble());
+    for(const auto& I : S) ss.emplace_back(I.real().toDouble(), I.imag().toDouble());
 
-    return std::make_tuple(m, s);
+    return {mm, ss};
 }
 
 PYBIND11_MODULE(pyvpmr, m) {
-    m.def("vpmr", &vpmr_wrapper, pybind11::call_guard<pybind11::gil_scoped_release>());
+    m.def("vpmr", &vpmr_wrapper, pybind11::call_guard<pybind11::gil_scoped_release>(), pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("d") = 512, pybind11::arg("q") = 500, pybind11::arg("m") = 6, pybind11::arg("nc") = 4, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "");
 }
