@@ -245,6 +245,7 @@ int print_helper() {
     return 0;
 }
 
+#ifndef PYVPMR
 int main(const int argc, const char** argv) {
 #ifdef HAVE_WINDOWS_H
     SetConsoleCP(CP_UTF8);
@@ -356,3 +357,39 @@ int main(const int argc, const char** argv) {
 
     return 0;
 }
+#else
+#include <pybind11/complex.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+
+std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>> vpmr_wrapper(
+    const int n, const int d, const int q, const int m, const int nc, const double e, const std::string& k) {
+    N = n;
+    DIGIT = d;
+    QUAD_ORDER = q;
+    SCALE = m;
+    NC = nc;
+    TOL = mpreal(e);
+    if(!k.empty()) KERNEL = k;
+
+    std::vector<std::complex<double>> mm, ss;
+
+    Expression kernel;
+    if(!kernel.compile()) {
+        std::cerr << "Cannot compile kernel function: " << KERNEL << ".\n";
+        return {mm, ss};
+    }
+    Integrand::set_expression(&kernel);
+
+    const auto [M, S] = vpmr();
+
+    for(const auto& I : M) mm.emplace_back(I.real().toDouble(), I.imag().toDouble());
+    for(const auto& I : S) ss.emplace_back(I.real().toDouble(), I.imag().toDouble());
+
+    return {mm, ss};
+}
+
+PYBIND11_MODULE(pyvpmr, m) {
+    m.def("vpmr", &vpmr_wrapper, pybind11::call_guard<pybind11::gil_scoped_release>(), pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("d") = 512, pybind11::arg("q") = 500, pybind11::arg("m") = 6, pybind11::arg("nc") = 4, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "");
+}
+#endif

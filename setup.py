@@ -12,9 +12,10 @@ setup(
     ext_modules=[
         Pybind11Extension(
             "pyvpmr",
-            ["src/VPMR.py.cpp", "src/VPMR.cpp"],
+            ["src/VPMR.cpp"],
             include_dirs=["eigen", "eigen/unsupported", "mpreal", "exprtk", "exprtk-custom-types"],
             libraries=["mpfr", "gmp", "tbb"],
+            define_macros=[("PYVPMR", 1)],
         ),
     ],
     cmdclass={"build_ext": build_ext},

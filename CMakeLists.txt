@@ -22,7 +22,7 @@ link_libraries(gmp mpfr)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
-else()
+else ()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto=auto")
 endif ()
 
@@ -38,7 +38,9 @@ find_package(Python3 REQUIRED COMPONENTS Development Interpreter)
 message(STATUS "Python3 version: ${Python3_VERSION}")
 include_directories(${Python3_INCLUDE_DIRS})
 add_subdirectory(pybind11)
-pybind11_add_module(pyvpmr src/VPMR.py.cpp src/VPMR.cpp)
+
+pybind11_add_module(pyvpmr src/VPMR.cpp)
+target_compile_definitions(pyvpmr PRIVATE PYVPMR)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_sources(${PROJECT_NAME} PRIVATE vpmr.rc)
