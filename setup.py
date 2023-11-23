@@ -23,6 +23,3 @@ setup(
     zip_safe=False,
     python_requires=">=3.7",
 )
-
-if __name__ == "__main__":
-    setup()
