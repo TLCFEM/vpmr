@@ -2,6 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7770193.svg)](https://doi.org/10.5281/zenodo.7770193)
 [![codecov](https://codecov.io/gh/TLCFEM/vpmr/branch/master/graph/badge.svg?token=9QE6SQC3ZG)](https://codecov.io/gh/TLCFEM/vpmr)
+[![PyPI version](https://badge.fury.io/py/pyvpmr.svg)](https://pypi.org/project/pyvpmr/)
 
 [![gplv3-or-later](https://www.gnu.org/graphics/gplv3-or-later.svg)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
@@ -35,6 +36,10 @@ the [original](https://github.com/ZXGao97/VPMR) MATLAB implementation for more d
 > [!WARNING]
 > The Python module needs external libraries to be installed.
 
+> [!WARNING]
+> Windows users need to have a working [MSYS2](https://www.msys2.org/) environment. See below for more details.
+> For other environments, you need to figure out how to install `gmp` and `mpfr` on your own.
+
 On RPM-based Linux distributions (using `dnf`), if you are:
 1. compiling the application from source (or wheels are not available), `sudo dnf install -y gcc-c++ tbb-devel mpfr-devel gmp-devel`
 2. using the packaged binary (wheels are available), `sudo dnf install -y gmp mpfr tbb`
@@ -45,7 +50,49 @@ Then install the package with `pip`.
 pip install pyvpmr
 ```
 
-### Compile
+If the corresponding wheel is not available, the package will be compiled, which takes a few minutes.
+The execution of the algorithm always requires available `gmp`, `mpfr` and `tbb` libraries.
+
+#### Example
+
+```python
+import numpy as np
+from pyvpmr import vpmr
+import matplotlib.pyplot as plt
+
+
+def example():
+    m, s = vpmr(n=50, k='exp(-t^2/4)')
+
+    x = np.linspace(0, 10, 401)
+    y_ref = np.exp(-x ** 2 / 4)
+
+    y = np.zeros(len(x), dtype=complex)
+    for ml, sl in zip(np.array(m), np.array(s)):
+        y += ml * np.exp(-sl * x)
+    y = np.abs(y)
+
+    plt.xlim(0, 10)
+    plt.ylim(0, 1)
+
+    plt.plot(x, y, label='vpmr')
+    plt.plot(x, y_ref, label='analytical')
+    plt.legend()
+    # plot error on the second axis
+    plt.twinx()
+    plt.plot(x, abs(y - y_ref), label='error', color='red')
+    plt.yscale('log')
+
+    plt.legend(loc='lower right')
+    plt.tight_layout()
+    plt.show()
+
+
+if __name__ == '__main__':
+    example()
+```
+
+### Compile Binary
 
 > [!WARNING]
 > The application relies on `eigen` and `exprtk`, which depend on very heavy usage of templates.
@@ -97,9 +144,9 @@ Usage: vpmr [options]
 Options:
 
    -n <int>     number of terms (default: 10)
-   -d <int>     number of digits (default: 512)
+   -d <int>     number of precision bits (default: 512)
    -q <int>     quadrature order (default: 500)
-   -m <int>     digit multiplier (default: 6)
+   -m <int>     precision multiplier (default: 6)
    -nc <int>    controls the maximum exponent (default: 4)
    -e <float>   tolerance (default: 1E-8)
    -k <string>  file name of kernel function (default: exp(-t^2/4))
