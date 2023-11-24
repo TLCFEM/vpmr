@@ -6,7 +6,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [tool.cibuildwheel]
-platforms = ["linux", "macos"]
+platform = ["linux", "macos"]
 skip = ["*musl*"]
 manylinux-x86_64-image = "manylinux_2_28"
 manylinux-i686-image = "manylinux_2_28"
