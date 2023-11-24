@@ -13,7 +13,8 @@ setup(
     author_email="tlcfem@gmail.com",
     url="https://github.com/TLCFEM/vpmr",
     description="The VPMR Algorithm",
-    long_description=(Path(__file__).parent / "README.md").read_text(),
+    long_description=(Path(__file__).parent / "README.md").read_text().replace(
+        "resource/", "https://raw.githubusercontent.com/TLCFEM/vpmr/master/resource/"),
     long_description_content_type='text/markdown',
     ext_modules=[
         Pybind11Extension(
