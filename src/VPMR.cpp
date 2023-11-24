@@ -110,7 +110,13 @@ using vec = Eigen::Matrix<mpreal, Eigen::Dynamic, 1>;
 using cx_vec = Eigen::Matrix<std::complex<mpreal>, Eigen::Dynamic, 1>;
 
 // step 2
-mat lyap(const mat& A, const mat& C) { return Eigen::internal::matrix_function_solve_triangular_sylvester(A, A, C); }
+mat lyap(const vec& A, mat&& C) {
+    tbb::parallel_for(0, static_cast<int>(A.size()), [&](const int i) {
+        for(auto j = 0; j < A.size(); ++j) C(i, j) /= (A(i) + A(j));
+    });
+
+    return std::move(C);
+}
 
 long pos(const vec& A) {
     auto sum = mpreal(0, DIGIT);
@@ -142,8 +148,8 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
 
     // step 3
     std::cout << "[2/6] Solving Lyapunov equation...\n";
-    const mat S = lyap(A.asDiagonal(), lyap_rhs(B)).llt().matrixL();
-    const mat L = lyap(A.asDiagonal(), lyap_rhs(C)).llt().matrixL();
+    const mat S = lyap(A, lyap_rhs(B)).llt().matrixL();
+    const mat L = lyap(A, lyap_rhs(C)).llt().matrixL();
 
     // step 4
     std::cout << "[3/6] Solving SVD...\n";
