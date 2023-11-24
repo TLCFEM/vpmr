@@ -1,8 +1,8 @@
 diff --git a/Eigen/src/SVD/BDCSVD.h b/Eigen/src/SVD/BDCSVD.h
-index a69fdcabb..de8653a95 100644
+index a4ba8a7a4..8a55c2af2 100644
 --- a/Eigen/src/SVD/BDCSVD.h
 +++ b/Eigen/src/SVD/BDCSVD.h
-@@ -33,6 +33,8 @@
+@@ -34,6 +34,8 @@
  #include <iostream>
  #endif
  
@@ -11,16 +11,7 @@ index a69fdcabb..de8653a95 100644
  namespace Eigen {
  
  #ifdef EIGEN_BDCSVD_DEBUG_VERBOSE
-@@ -183,7 +185,7 @@ public:
-    *
-    * \param matrix the matrix to decompose
-    */
--  BDCSVD(const MatrixType& matrix) : m_algoswap(16), m_numIters(0) {
-+  BDCSVD(const MatrixType& matrix) : m_algoswap(4), m_numIters(0) {
-     compute_impl(matrix, internal::get_computation_options(Options));
-   }
- 
-@@ -833,6 +835,16 @@ template <typename MatrixType, int Options>
+@@ -834,6 +836,16 @@ template <typename MatrixType, int Options>
  typename BDCSVD<MatrixType, Options>::RealScalar BDCSVD<MatrixType, Options>::secularEq(
      RealScalar mu, const ArrayRef& col0, const ArrayRef& diag, const IndicesRef& perm, const ArrayRef& diagShifted,
      RealScalar shift) {
@@ -37,7 +28,7 @@ index a69fdcabb..de8653a95 100644
    Index m = perm.size();
    RealScalar res = Literal(1);
    for(Index i=0; i<m; ++i)
-@@ -1197,11 +1209,17 @@ void BDCSVD<MatrixType, Options>::computeSingVecs(const ArrayRef& zhat, const Ar
+@@ -1198,11 +1210,17 @@ void BDCSVD<MatrixType, Options>::computeSingVecs(const ArrayRef& zhat, const Ar
      else
      {
        U.col(k).setZero();

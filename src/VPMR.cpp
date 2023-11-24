@@ -403,8 +403,8 @@ int main(const int argc, const char** argv) {
     }
 
     const auto end = std::chrono::high_resolution_clock::now();
-    const auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
-    std::cout << std::noshowpos << "\nRunning time: " << duration << " s.\n";
+    const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    std::cout << std::noshowpos << "\nRunning time: " << duration << " ms.\n";
 
     return 0;
 }
