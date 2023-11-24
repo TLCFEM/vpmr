@@ -38,8 +38,6 @@ jobs:
           cd eigen && git apply ../patch_size.patch && cd ..
       - name: CI Build Wheel
         uses: pypa/cibuildwheel@v2.16
-        env:
-          CIBW_PLATFORM: linux
       - name: Upload
         uses: actions/upload-artifact@v3
         with:
