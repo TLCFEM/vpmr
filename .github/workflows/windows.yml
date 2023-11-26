@@ -9,7 +9,8 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 120
     steps:
-      - uses: msys2/setup-msys2@v2
+      - name: MSYS
+        uses: msys2/setup-msys2@v2
         with:
           msystem: mingw64
           update: true

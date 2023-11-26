@@ -13,7 +13,7 @@ setup(
     author_email="tlcfem@gmail.com",
     url="https://github.com/TLCFEM/vpmr",
     description="The VPMR Algorithm",
-    long_description=(Path(__file__).parent / "README.md").read_text().replace(
+    long_description=(Path(__file__).parent / "README.md").read_text(encoding='utf8').replace(
         "resource/", "https://raw.githubusercontent.com/TLCFEM/vpmr/master/resource/"),
     long_description_content_type='text/markdown',
     install_requires=["numpy", "matplotlib"],
