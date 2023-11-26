@@ -469,7 +469,7 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
     return {mm, ss};
 }
 
-PYBIND11_MODULE(pyvpmr, m) {
+PYBIND11_MODULE(_pyvpmr, m) {
     m.doc() = "The VPMR Algorithm";
 
     m.def(

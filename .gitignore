@@ -5,5 +5,5 @@
 .vscode/
 build/
 cmake-build-*/
-plotter/venv
 wheelhouse
+__pycache__

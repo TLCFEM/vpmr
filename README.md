@@ -10,10 +10,11 @@
 
 - [ ] **more performant parallel SVD algorithm**: `eigen` only provides sequential SVD
 - [ ] **alternative integration**: currently only Gauss-Legendre quadrature is available
- 
+
 ## What Is This?
 
 This is a C++ implementation of the VPMR algorithm to compute the approximation of arbitrary smooth kernel.
+A Python package is also provided.
 
 Check the reference paper [10.1007/s10915-022-01999-1](https://doi.org/10.1007/s10915-022-01999-1) and
 the [original](https://github.com/ZXGao97/VPMR) MATLAB implementation for more details.
@@ -41,8 +42,12 @@ the [original](https://github.com/ZXGao97/VPMR) MATLAB implementation for more d
 > For other environments, you need to figure out how to install `gmp` and `mpfr` on your own.
 
 On RPM-based Linux distributions (using `dnf`), if you are:
-1. compiling the application from source (or wheels are not available), `sudo dnf install -y gcc-c++ tbb-devel mpfr-devel gmp-devel`
+
+1. compiling the application from source (or wheels are not
+   available), `sudo dnf install -y gcc-c++ tbb-devel mpfr-devel gmp-devel`
 2. using the packaged binary (wheels are available), `sudo dnf install -y gmp mpfr tbb`
+
+On macOS, you need to `brew install tbb mpfr gmp`.
 
 Then install the package with `pip`.
 
@@ -53,43 +58,21 @@ pip install pyvpmr
 If the corresponding wheel is not available, the package will be compiled, which takes a few minutes.
 The execution of the algorithm always requires available `gmp`, `mpfr` and `tbb` libraries.
 
-#### Example
+#### Jumpstart
 
 ```python
 import numpy as np
-from pyvpmr import vpmr
-import matplotlib.pyplot as plt
+
+from pyvpmr import vpmr, plot
 
 
-def example():
-    m, s = vpmr(n=50, k='exp(-t^2/4)')
-
-    x = np.linspace(0, 10, 401)
-    y_ref = np.exp(-x ** 2 / 4)
-
-    y = np.zeros(len(x), dtype=complex)
-    for ml, sl in zip(np.array(m), np.array(s)):
-        y += ml * np.exp(-sl * x)
-    y = np.abs(y)
-
-    plt.xlim(0, 10)
-    plt.ylim(0, 1)
-
-    plt.plot(x, y, label='vpmr')
-    plt.plot(x, y_ref, label='analytical')
-    plt.legend()
-    # plot error on the second axis
-    plt.twinx()
-    plt.plot(x, abs(y - y_ref), label='error', color='red')
-    plt.yscale('log')
-
-    plt.legend(loc='lower right')
-    plt.tight_layout()
-    plt.show()
+def kernel(x):
+    return np.exp(-x ** 2 / 4)
 
 
 if __name__ == '__main__':
-    example()
+    m, s = vpmr(n=50, k='exp(-t^2/4)')
+    plot(m, s, kernel)
 ```
 
 ### Compile Binary
@@ -230,37 +213,6 @@ echo "exp(-t*t/10)" > kernel.txt
 ```
 
 ![exp(-t^2/10)](resource/arbitrary.png)
-
-#### Visualisation
-
-The `plotter` folder contains a Python script to plot the result.
-
-It is necessary to have `click`, `matplotlib` and `numpy` available in, for example, the virtual environment.
-
-The usage is similar:
-
-```text
-Usage: plotter.py [OPTIONS]
-
-Options:
-  -n INTEGER   number of terms
-  -q INTEGER   quadrature order
-  -d INTEGER   number of precision digits
-  -nc INTEGER  controls the maximum exponents
-  -e FLOAT     tolerance
-  -o TEXT      save plot to file
-  -k TEXT      file name of kernel function
-  --exe TEXT   path to vpmr executable
-  --help       Show this message and exit.
-```
-
-> [!Note]
-> Remember to change the kernel function so that the plot is meaningful.
-> ```python
-> # change this kernel before plotting
-> def kernel(x):
->     return np.exp(-x * x / 4)
-> ```
 
 ## Binary
 
