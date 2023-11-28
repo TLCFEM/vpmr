@@ -53,3 +53,8 @@ jobs:
           tag: v${{ env.VPMR_VERSION }}
           prerelease: false
           overwrite: true
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: vpmr-${{ env.VPMR_VERSION }}-win.7z
+          path: vpmr-${{ env.VPMR_VERSION }}-win.7z
