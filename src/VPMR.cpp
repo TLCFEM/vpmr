@@ -82,9 +82,10 @@ public:
     }
 };
 
+Expression kernel{};
+
 // integrand in eq. 2.2 --- K(t)cos(jt)
 class Integrand {
-    static Expression* expression;
     static tbb::concurrent_unordered_map<int, mpreal> value;
 
     const int j;
@@ -93,16 +94,12 @@ public:
     explicit Integrand(const int J)
         : j(J) {}
 
-    static void set_expression(Expression* E) { expression = E; }
-
     mpreal operator()(const int i, const mpreal& r) const {
-        if(value.find(i) == value.end())
-            value.insert(std::make_pair(i, expression->value(-NC * log((mpreal(1, DIGIT) + cos(r)) >> 1))));
+        if(value.find(i) == value.end()) value.insert(std::make_pair(i, kernel.value(-NC * log((mpreal(1, DIGIT) + cos(r)) >> 1))));
         return value[i] * cos(j * r);
     }
 };
 
-Expression* Integrand::expression = nullptr;
 tbb::concurrent_unordered_map<int, mpreal> Integrand::value(QUAD_ORDER);
 
 using mat = Eigen::Matrix<mpreal, Eigen::Dynamic, Eigen::Dynamic>;
@@ -111,9 +108,7 @@ using cx_vec = Eigen::Matrix<std::complex<mpreal>, Eigen::Dynamic, 1>;
 
 // step 2
 mat lyap(const vec& A, mat&& C) {
-    tbb::parallel_for(0, static_cast<int>(A.size()), [&](const int i) {
-        for(auto j = 0; j < A.size(); ++j) C(i, j) /= (A(i) + A(j));
-    });
+    tbb::parallel_for(0, static_cast<int>(A.size()), [&](const int i) { for(auto j = 0; j < A.size(); ++j) C(i, j) /= (A(i) + A(j)); });
 
     return std::move(C);
 }
@@ -164,14 +159,12 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
     // step 7
     const auto P = pos(SIG);
     std::cout << "[4/6] Transforming (P=" << P << ")...\n";
-    if(P == SIG.size())
-        std::cout << "WARNING: No singular value is smaller than the given tolerance.\n";
+    if(P == SIG.size()) std::cout << "WARNING: No singular value is smaller than the given tolerance.\n";
 
     // step 5
     auto SS = SIG;
     for(auto I = 0; I < SS.size(); ++I)
-        if(SS(I) > std::numeric_limits<mpreal>::epsilon())
-            SS(I) = pow(SS(I), -.5);
+        if(SS(I) > std::numeric_limits<mpreal>::epsilon()) SS(I) = pow(SS(I), -.5);
         else {
             std::cout << "WARNING: Need to increase digits.\n";
             SS(I) = pow(std::numeric_limits<mpreal>::epsilon(), -.5);
@@ -266,17 +259,15 @@ std::tuple<cx_vec, cx_vec> vpmr() {
     auto [M, S] = model_reduction(A, B, C);
 
     auto ID = sort_index(M);
-    for(int I = int(ID.size()) - 1; I >= 0; --I)
-        if(norm(M(ID[I])) < TOL)
-            ID.erase(ID.begin() + I);
-        else
-            break;
+    for(int I = static_cast<int>(ID.size()) - 1; I >= 0; --I)
+        if(norm(M(ID[I])) < TOL) ID.erase(ID.begin() + I);
+        else break;
 
     std::cout << "[6/6] Done.\n\n";
 
     if(abs(W(0)) < TOL) return std::make_tuple(M(ID), -S(ID));
 
-    cx_vec MM = cx_vec::Zero(long(ID.size()) + 1), SS = cx_vec::Zero(long(ID.size()) + 1);
+    cx_vec MM = cx_vec::Zero(static_cast<long>(ID.size()) + 1), SS = cx_vec::Zero(static_cast<long>(ID.size()) + 1);
     MM(0) = W(0);
     SS(0) = mpreal(0, DIGIT);
     MM.tail(ID.size()) = M(ID);
@@ -313,28 +304,18 @@ int main(const int argc, const char** argv) {
 
     bool has_digit = false;
     for(auto I = 1; I < argc; ++I) {
-        const auto token = std::string(argv[I]);
-
-        if(token == "-nc")
-            NC = std::stoi(argv[++I]);
-        else if(token == "-n")
-            N = std::stoi(argv[++I]);
+        if(const auto token = std::string(argv[I]); token == "-nc") NC = std::stoi(argv[++I]);
+        else if(token == "-n") N = std::stoi(argv[++I]);
         else if(token == "-d") {
             DIGIT = std::stoi(argv[++I]);
             has_digit = true;
         }
-        else if(token == "-q")
-            QUAD_ORDER = std::stoi(argv[++I]);
-        else if(token == "-m")
-            SCALE = std::stoi(argv[++I]);
-        else if(token == "-e")
-            TOL = mpreal(argv[++I]);
-        else if(token == "-w")
-            OUTPUT_W = true;
-        else if(token == "-s")
-            OUTPUT_EIG = true;
-        else if(token == "-h")
-            return print_helper();
+        else if(token == "-q") QUAD_ORDER = std::stoi(argv[++I]);
+        else if(token == "-m") SCALE = std::stoi(argv[++I]);
+        else if(token == "-e") TOL = mpreal(argv[++I]);
+        else if(token == "-w") OUTPUT_W = true;
+        else if(token == "-s") OUTPUT_EIG = true;
+        else if(token == "-h") return print_helper();
         else if(token == "-k") {
             const std::string file_name(argv[++I]);
             std::ifstream file(file_name);
@@ -359,8 +340,7 @@ int main(const int argc, const char** argv) {
     while((comb_max /= 2) > 0) ++comb_digit;
     comb_digit = std::max(5 * N, SCALE * comb_digit);
 
-    if(!has_digit)
-        DIGIT = comb_digit;
+    if(!has_digit) DIGIT = comb_digit;
     else if(comb_digit >= DIGIT) {
         std::cout << "WARNING: Too few digits to hold combinatorial number, resetting digits to " << comb_digit << ".\n";
         DIGIT = comb_digit;
@@ -376,12 +356,10 @@ int main(const int argc, const char** argv) {
 
     TOL /= 2;
 
-    Expression kernel;
     if(!kernel.compile()) {
         std::cerr << "Cannot compile kernel function: " << KERNEL << ".\n";
         return 1;
     }
-    Integrand::set_expression(&kernel);
 
     std::cout << std::scientific << std::setprecision(4);
 
@@ -435,8 +413,7 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
     while((comb_max /= 2) > 0) ++comb_digit;
     comb_digit = std::max(5 * N, SCALE * comb_digit);
 
-    if(0 == d)
-        DIGIT = comb_digit;
+    if(0 == d) DIGIT = comb_digit;
     else if(comb_digit >= DIGIT) {
         std::cout << "WARNING: Too few digits to hold combinatorial number, resetting digits to " << comb_digit << ".\n";
         DIGIT = comb_digit;
@@ -454,12 +431,10 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
 
     std::vector<std::complex<double>> mm, ss;
 
-    Expression kernel;
     if(!kernel.compile()) {
         std::cerr << "Cannot compile kernel function: " << KERNEL << ".\n";
         return {mm, ss};
     }
-    Integrand::set_expression(&kernel);
 
     const auto [M, S] = vpmr();
 

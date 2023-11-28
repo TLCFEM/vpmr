@@ -19,7 +19,6 @@
 
 #include <cmath>
 #include <iomanip>
-#include <iostream>
 #include <memory>
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_for.h>
@@ -28,11 +27,11 @@
 
 using namespace mpfr;
 
-mpreal MP_PI = [] {
+inline mpreal MP_PI = [] {
     mpreal::set_default_prec(512);
     return const_pi();
 }();
-mpreal MP_PI_HALF{MP_PI / 2};
+inline mpreal MP_PI_HALF{MP_PI / 2};
 extern int DIGIT;
 
 class Evaluation {
@@ -42,7 +41,10 @@ class Evaluation {
 
 public:
     explicit Evaluation(const mpreal& X, const size_t D)
-        : degree(D), _x(X), _v(1, DIGIT), _d(0, DIGIT) { this->evaluate(X); }
+        : degree(D)
+        , _x(X)
+        , _v(1, DIGIT)
+        , _d(0, DIGIT) { this->evaluate(X); }
 
     void evaluate(const mpreal& x) {
         this->_x = x;
@@ -75,8 +77,10 @@ private:
 
 public:
     explicit LegendrePolynomial(const size_t D)
-        : degree(D > 2 ? D : 2), _r(std::make_unique<mpreal[]>(degree)), _w(std::make_unique<mpreal[]>(degree)) {
-        tbb::parallel_for(size_t(0), degree / 2 + 1, [&](const size_t i) {
+        : degree(D > 2 ? D : 2)
+        , _r(std::make_unique<mpreal[]>(degree))
+        , _w(std::make_unique<mpreal[]>(degree)) {
+        tbb::parallel_for(static_cast<size_t>(0), degree / 2 + 1, [&](const size_t i) {
             mpreal dr{1, DIGIT};
 
             Evaluation eval(cos(MP_PI * mpreal(4 * i + 3, DIGIT) / mpreal(4 * degree + 2, DIGIT)), degree);
@@ -95,12 +99,12 @@ public:
             this->_w[i] = this->_w[degree - i - 1];
         });
 
-        tbb::parallel_for(size_t(0), degree, [&](const size_t i) { this->_r[i] = MP_PI_HALF * this->_r[i] + MP_PI_HALF; });
+        tbb::parallel_for(static_cast<size_t>(0), degree, [&](const size_t i) { this->_r[i] = MP_PI_HALF * this->_r[i] + MP_PI_HALF; });
     }
 
-    [[nodiscard]] mpreal root(int i) const { return this->_r[i]; }
+    [[nodiscard]] mpreal root(const int i) const { return this->_r[i]; }
 
-    [[nodiscard]] mpreal weight(int i) const { return this->_w[i]; }
+    [[nodiscard]] mpreal weight(const int i) const { return this->_w[i]; }
 };
 
 class Quadrature {
@@ -110,17 +114,15 @@ public:
     explicit Quadrature(const size_t D)
         : poly(D) {}
 
-    template<typename Function>
-    mpreal integrate(Function&& f) const {
+    template<typename Function> mpreal integrate(Function&& f) const {
         // mpreal sum{0, DIGIT};
         // for (int i = 0; i < int(poly.degree); ++i)
         //     sum += poly.weight(i) * f(i, poly.root(i));
         // return sum;
         return tbb::parallel_deterministic_reduce(
-            tbb::blocked_range<int>(0, int(poly.degree)), mpreal(0, DIGIT),
+            tbb::blocked_range<int>(0, static_cast<int>(poly.degree)), mpreal(0, DIGIT),
             [&](const tbb::blocked_range<int>& r, mpreal running_total) {
-                for(auto i = r.begin(); i < r.end(); ++i)
-                    running_total += poly.weight(i) * f(i, poly.root(i));
+                for(auto i = r.begin(); i < r.end(); ++i) running_total += poly.weight(i) * f(i, poly.root(i));
                 return running_total;
             },
             std::plus<>());
