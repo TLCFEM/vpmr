@@ -19,6 +19,15 @@ A Python package is also provided.
 Check the reference paper [10.1007/s10915-022-01999-1](https://doi.org/10.1007/s10915-022-01999-1) and
 the [original](https://github.com/ZXGao97/VPMR) MATLAB implementation for more details.
 
+In short, the algorithm tries to find a summation of exponentials to approximate a given kernel function.
+In mathematical terms, it looks for a set of $m_j$ and $s_j$ such that
+
+```math
+\max_{t\in{}I}\left\|g(t)-\sum_jm_j\exp(-s_jt)\right\|<\epsilon.
+```
+
+In the above, $g(t)$ is the given kernel function and $\epsilon$ is the prescribed tolerance.
+
 ## Dependency
 
 1. [gmp](https://gmplib.org/) for multiple precision arithmetic
