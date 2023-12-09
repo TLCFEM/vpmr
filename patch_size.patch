@@ -1,17 +1,17 @@
 diff --git a/Eigen/src/SVD/BDCSVD.h b/Eigen/src/SVD/BDCSVD.h
-index a4ba8a7a4..8a55c2af2 100644
+index 7948ca315..8f1977c1b 100644
 --- a/Eigen/src/SVD/BDCSVD.h
 +++ b/Eigen/src/SVD/BDCSVD.h
-@@ -34,6 +34,8 @@
- #include <iostream>
- #endif
+@@ -30,6 +30,8 @@
+ // IWYU pragma: private
+ #include "./InternalHeaderCheck.h"
  
 +#include <tbb/parallel_reduce.h>
 +
- namespace Eigen {
- 
  #ifdef EIGEN_BDCSVD_DEBUG_VERBOSE
-@@ -834,6 +836,16 @@ template <typename MatrixType, int Options>
+ #include <iostream>
+ #endif
+@@ -825,6 +827,16 @@ template <typename MatrixType, int Options>
  typename BDCSVD<MatrixType, Options>::RealScalar BDCSVD<MatrixType, Options>::secularEq(
      RealScalar mu, const ArrayRef& col0, const ArrayRef& diag, const IndicesRef& perm, const ArrayRef& diagShifted,
      RealScalar shift) {
@@ -27,27 +27,17 @@ index a4ba8a7a4..8a55c2af2 100644
 +      std::plus<>());
    Index m = perm.size();
    RealScalar res = Literal(1);
-   for(Index i=0; i<m; ++i)
-@@ -1198,11 +1210,17 @@ void BDCSVD<MatrixType, Options>::computeSingVecs(const ArrayRef& zhat, const Ar
-     else
-     {
+   for (Index i = 0; i < m; ++i) {
+@@ -1182,10 +1194,10 @@ void BDCSVD<MatrixType, Options>::computeSingVecs(const ArrayRef& zhat, const Ar
+       if (m_compV) V.col(k) = VectorType::Unit(n, k);
+     } else {
        U.col(k).setZero();
--      for(Index l=0;l<m;++l)
--      {
--        Index i = perm(l);
--        U(i,k) = zhat(i)/(((diag(i) - shifts(k)) - mus(k)) )/( (diag(i) + singVals[k]));
+-      for (Index l = 0; l < m; ++l) {
++      tbb::parallel_for(Index(0), m, [&](const Index l) {
+         Index i = perm(l);
+         U(i, k) = zhat(i) / (((diag(i) - shifts(k)) - mus(k))) / ((diag(i) + singVals[k]));
 -      }
-+      //      for(Index l=0;l<m;++l)
-+      //      {
-+      //        Index i = perm(l);
-+      //        U(i,k) = zhat(i)/(((diag(i) - shifts(k)) - mus(k)) )/( (diag(i) + singVals[k]));
-+      //      }
-+      tbb::parallel_for(tbb::blocked_range<Index>(0, m), [&](const tbb::blocked_range<Index>& r) {
-+        for (Index l = r.begin(); l != r.end(); ++l) {
-+          Index i = perm(l);
-+          U(i, k) = zhat(i) / (((diag(i) - shifts(k)) - mus(k))) / ((diag(i) + singVals[k]));
-+        }
 +      });
-       U(n,k) = Literal(0);
+       U(n, k) = Literal(0);
        U.col(k).normalize();
  
