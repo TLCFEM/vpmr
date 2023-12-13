@@ -30,7 +30,7 @@ def split(result: str) -> tuple | None:
     Split the output of the vpmr program into two arrays of complex numbers.
 
     :param result: The raw output of the vpmr program.
-    :return: a tuple of two arrays of complex numbers.
+    :return: A tuple of two arrays of complex numbers.
     """
     split_r = result.strip().split('\n')
     regex = re.compile(r'([+\-]\d+\.\d+e[+\-]\d+){2}j')
@@ -46,8 +46,8 @@ def split(result: str) -> tuple | None:
 
 def plot(
         m: list | np.ndarray, s: list | np.ndarray, kernel: Callable, *,
-        size: tuple = (6, 4),
-        xlim: tuple = (0, 10),
+        size: tuple[float, float] = (6, 4),
+        xlim: tuple[float, float] = (0, 10),
         show: bool = True,
         save_to: str = None
 ):
@@ -93,3 +93,56 @@ def plot(
         plt.show()
     if save_to:
         fig.savefig(save_to)
+
+
+def _process_args(*args):
+    if len(args) == 1:
+        assert 2 == len(args[0])
+        m, s = args[0]
+    elif len(args) == 2:
+        m, s = args
+    else:
+        raise ValueError('Wrong number of arguments.')
+
+    if len(m) == len(s):
+        return np.array(m), np.array(s)
+
+    raise ValueError('The length of m and s must be the same.')
+
+
+def to_global_damping(*args):
+    """
+    Generate a command to use the kernel as a global nonviscous damping model in suanPan.
+    :param args: The m and s values.
+    :return: The command.
+    """
+    command = '# The following can be used as a global nonviscous damping with the Newmark time integration.\n'
+    command += '# You may need to modify the first line to change tag and integration parameters.\n'
+    command += 'integrator NonviscousNewmark 1 .25 .5'
+
+    for m, s in zip(*_process_args(*args)):
+        command += f' \\\n{m.real:+.15e} {m.imag:+.15e} {s.real:+.15e} {s.imag:+.15e}'
+
+    command += '\n'
+
+    return command
+
+
+def to_elemental_damping(*args):
+    """
+    Generate a command to use the kernel as a per-element nonviscous damping model in suanPan.
+    :param args: The m and s values.
+    :return: The command.
+    """
+    command = '# The following can be used as a per-element based nonviscous damping.\n'
+    command += '# You may need to modify the first line to change tags.\n'
+    command += '# Use the alternative form to apply to multiplier elements.\n'
+    command += '# modifier ElementalNonviscousGroup {unique_modifier_tag} {associated_element_group_tag}'
+    command += 'modifier ElementalNonviscous {unique_modifier_tag} {associated_element_tag}'
+
+    for m, s in zip(*_process_args(*args)):
+        command += f' \\\n{m.real:+.15e} {m.imag:+.15e} {s.real:+.15e} {s.imag:+.15e}'
+
+    command += '\n'
+
+    return command

@@ -15,13 +15,14 @@
 
 import numpy as np
 
-from pyvpmr import vpmr, plot
+from pyvpmr import vpmr, plot, to_global_damping
 
 
 def kernel(x):
-    return np.exp(-x ** 2 / 4)
+    return np.exp(-x ** 2 / 4) * x ** 3
 
 
 if __name__ == '__main__':
-    m, s = vpmr(n=50, k='exp(-t^2/4)')
+    m, s = vpmr(n=60, k='exp(-t^2/4)*t^3', e=1e-12, nc=10)
+    print(to_global_damping(m, s))
     plot(m, s, kernel)
