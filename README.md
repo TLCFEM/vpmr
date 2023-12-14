@@ -30,14 +30,19 @@ In the above, $g(t)$ is the given kernel function and $\epsilon$ is the prescrib
 
 ## Dependency
 
+The following libraries are required:
+
 1. [gmp](https://gmplib.org/) for multiple precision arithmetic
 2. [mpfr](https://www.mpfr.org/) for multiple-precision floating-point computations
-3. [mpreal](http://www.holoborodko.com/pavel/mpfr/) `mpreal` type C++ wrapper, included
-4. [BigInt](https://github.com/faheel/BigInt) `BigInt` arbitrary large integer for combinatorial number, included
-5. [Eigen](https://eigen.tuxfamily.org/) for matrix decomposition, included
-6. [tbb](https://github.com/oneapi-src/oneTBB) for parallel computing
-7. [exprtk](https://github.com/ArashPartow/exprtk.git) for expression parsing, included
-8. [exprtk-custom-types](https://github.com/ArashPartow/exprtk-custom-types.git) for `mpreal` support, included
+3. [tbb](https://github.com/oneapi-src/oneTBB) for parallel computing
+
+The following libraries are included:
+
+1. [mpreal](http://www.holoborodko.com/pavel/mpfr/) `mpreal` type C++ wrapper, included
+2. [BigInt](https://github.com/faheel/BigInt) `BigInt` arbitrary large integer for combinatorial number, included
+3. [Eigen](https://eigen.tuxfamily.org/) for matrix decomposition, included
+4. [exprtk](https://github.com/ArashPartow/exprtk.git) for expression parsing, included
+5. [exprtk-custom-types](https://github.com/ArashPartow/exprtk-custom-types.git) for `mpreal` support, included
 
 ## How To
 
