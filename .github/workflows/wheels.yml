@@ -19,7 +19,7 @@ jobs:
         run: pipx run build --sdist
       - name: Check
         run: pipx run twine check dist/*
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: pyvpmr
           path: dist/*.tar.gz
@@ -39,7 +39,7 @@ jobs:
       - name: CI Build Wheel
         uses: pypa/cibuildwheel@v2.16
       - name: Upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pyvpmr
           path: wheelhouse/*.whl
