@@ -37,4 +37,4 @@ jobs:
       - name: Upload
         uses: codecov/codecov-action@v4
         with:
-          gcov: true
+          plugin: pycoverage
