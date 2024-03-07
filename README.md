@@ -22,9 +22,9 @@ the [original](https://github.com/ZXGao97/VPMR) MATLAB implementation for more d
 In short, the algorithm tries to find a summation of exponentials to approximate a given kernel function.
 In mathematical terms, it looks for a set of $m_j$ and $s_j$ such that
 
-```math
+$$
 \max_{t\in{}I}\left\|g(t)-\sum_jm_j\exp(-s_jt)\right\|<\epsilon.
-```
+$$
 
 In the above, $g(t)$ is the given kernel function and $\epsilon$ is the prescribed tolerance.
 
