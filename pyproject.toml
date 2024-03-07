@@ -7,7 +7,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-dynamic = ["version"]
+dynamic = ["version", "readme"]
 name = "pyvpmr"
 description = "The VPMR Algorithm"
 requires-python = ">=3.7"
