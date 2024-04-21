@@ -98,6 +98,16 @@ if __name__ == '__main__':
 > The compilation would take minutes and around 2 GB memory.
 > You need to install libraries `gmp`, `mpfr` and `tbb` before compiling.
 
+#### Docker
+
+To avoid the hassle of installing dependencies, you can use the provided `Dockerfile`.
+For example,
+
+```bash
+wget -q https://raw.githubusercontent.com/TLCFEM/vpmr/master/Dockerfile
+docker build -t vpmr -f Dockerfile .
+```
+
 #### Windows
 
 Use the following instructions based on [MSYS2](https://www.msys2.org/), or follow the Linux instructions below with
