@@ -17,4 +17,6 @@ RUN apt-get update -y && apt-get install -y libtbb12 libmpfr6 libgmp10
 
 COPY --from=build /vpmr/build/vpmr /usr/local/bin/vpmr
 
-RUN vpmr -v
+RUN vpmr -h
+
+ENTRYPOINT ["vpmr"]
