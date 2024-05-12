@@ -351,7 +351,7 @@ int main(const int argc, const char** argv) {
 
     TOL.setPrecision(DIGIT);
 
-    MP_PI = const_pi(2 * DIGIT);
+    MP_PI = const_pi(DIGIT);
     MP_PI_HALF = MP_PI / 2;
 
     TOL /= 2;

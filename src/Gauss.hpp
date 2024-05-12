@@ -27,14 +27,14 @@
 
 using namespace mpfr;
 
-inline mpreal MP_PI = [] {
-    mpreal::set_default_prec(512);
-    return const_pi();
-}();
+inline mpreal MP_PI = const_pi();
 inline mpreal MP_PI_HALF{MP_PI / 2};
 extern int DIGIT;
 
 class Evaluation {
+    const mpreal ONE = mpreal(1, DIGIT);
+    const mpreal TWO = mpreal(2, DIGIT);
+
     const size_t degree;
 
     mpreal _x, _v, _d;
@@ -52,13 +52,13 @@ public:
         mpreal left{x}, right{1, DIGIT};
 
         for(size_t i = 2; i <= degree; ++i) {
-            this->_v = ((mpreal(2, DIGIT) * i - mpreal(1, DIGIT)) * x * left - (i - mpreal(1, DIGIT)) * right) / i;
+            this->_v = ((TWO * i - ONE) * x * left - (i - ONE) * right) / i;
 
             right = left;
             left = this->_v;
         }
 
-        this->_d = degree / (x * x - mpreal(1, DIGIT)) * (x * this->_v - right);
+        this->_d = degree / (x * x - ONE) * (x * this->_v - right);
     }
 
     [[nodiscard]] mpreal v() const { return this->_v; }
@@ -69,6 +69,9 @@ public:
 };
 
 class LegendrePolynomial {
+    const mpreal ONE = mpreal(1, DIGIT);
+    const mpreal TWO = mpreal(2, DIGIT);
+
 public:
     const size_t degree;
 
@@ -91,7 +94,7 @@ public:
             while(abs(dr) > std::numeric_limits<mpreal>::epsilon());
 
             this->_r[i] = eval.x();
-            this->_w[i] = mpreal(2, DIGIT) / ((mpreal(1, DIGIT) - eval.x() * eval.x()) * eval.d() * eval.d());
+            this->_w[i] = TWO / ((ONE - eval.x() * eval.x()) * eval.d() * eval.d());
         });
 
         tbb::parallel_for(degree / 2, degree, [&](const size_t i) {
