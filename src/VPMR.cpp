@@ -283,7 +283,7 @@ int print_helper() {
     std::cout << "   -n <int>     number of terms (default: 10)\n";
     std::cout << "   -d <int>     number of precision bits (default: 512)\n";
     std::cout << "   -q <int>     quadrature order (default: 500)\n";
-    std::cout << "   -m <int>     precision multiplier (default: 6)\n";
+    std::cout << "   -m <float>   precision multiplier (default: 1.5)\n";
     std::cout << "   -nc <int>    controls the maximum exponent (default: 4)\n";
     std::cout << "   -e <float>   tolerance (default: 1E-8)\n";
     std::cout << "   -k <string>  file name of kernel function (default: exp(-t^2/4))\n";
