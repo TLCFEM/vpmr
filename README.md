@@ -155,7 +155,7 @@ Options:
    -n <int>     number of terms (default: 10)
    -d <int>     number of precision bits (default: 512)
    -q <int>     quadrature order (default: 500)
-   -m <int>     precision multiplier (default: 6)
+   -m <int>     precision multiplier (default: 1.5)
    -nc <int>    controls the maximum exponent (default: 4)
    -e <float>   tolerance (default: 1E-8)
    -k <string>  file name of kernel function (default: exp(-t^2/4))

@@ -38,7 +38,7 @@ int NC = 4;                         // maximum exponent
 int N = 10;                         // number of terms
 int DIGIT = 512;                    // number of digits
 int QUAD_ORDER = 500;               // number of quadrature points
-int SCALE = 6;                      // scaling
+double SCALE = 1.5;                 // scaling
 mpreal TOL = mpreal("1E-8", DIGIT); // tolerance
 std::string KERNEL = "exp(-t*t/4)"; // default kernel
 
@@ -304,18 +304,26 @@ int main(const int argc, const char** argv) {
 
     bool has_digit = false;
     for(auto I = 1; I < argc; ++I) {
-        if(const auto token = std::string(argv[I]); token == "-nc") NC = std::stoi(argv[++I]);
-        else if(token == "-n") N = std::stoi(argv[++I]);
+        if(const auto token = std::string(argv[I]); token == "-nc")
+            NC = std::stoi(argv[++I]);
+        else if(token == "-n")
+            N = std::stoi(argv[++I]);
         else if(token == "-d") {
             DIGIT = std::stoi(argv[++I]);
             has_digit = true;
         }
-        else if(token == "-q") QUAD_ORDER = std::stoi(argv[++I]);
-        else if(token == "-m") SCALE = std::stoi(argv[++I]);
-        else if(token == "-e") TOL = mpreal(argv[++I]);
-        else if(token == "-w") OUTPUT_W = true;
-        else if(token == "-s") OUTPUT_EIG = true;
-        else if(token == "-h") return print_helper();
+        else if(token == "-q")
+            QUAD_ORDER = std::stoi(argv[++I]);
+        else if(token == "-m")
+            SCALE = std::stod(argv[++I]);
+        else if(token == "-e")
+            TOL = mpreal(argv[++I]);
+        else if(token == "-w")
+            OUTPUT_W = true;
+        else if(token == "-s")
+            OUTPUT_EIG = true;
+        else if(token == "-h")
+            return print_helper();
         else if(token == "-k") {
             const std::string file_name(argv[++I]);
             std::ifstream file(file_name);
@@ -335,12 +343,14 @@ int main(const int argc, const char** argv) {
     }
 
     // check size
-    BigInt comb_max = comb(2 * N, N);
-    int comb_digit = 0;
+    BigInt comb_max = comb(4 * N, 2 * N);
+    int comb_digit = 1;
     while((comb_max /= 2) > 0) ++comb_digit;
-    comb_digit = std::max(5 * N, SCALE * comb_digit);
+    comb_digit += 4 * N;
+    comb_digit = static_cast<int>(std::max(1.5, SCALE) * static_cast<double>(comb_digit));
 
-    if(!has_digit) DIGIT = comb_digit;
+    if(!has_digit)
+        DIGIT = comb_digit;
     else if(comb_digit >= DIGIT) {
         std::cout << "WARNING: Too few digits to hold combinatorial number, resetting digits to " << comb_digit << ".\n";
         DIGIT = comb_digit;
@@ -398,7 +408,7 @@ int main(const int argc, const char** argv) {
 #include <pybind11/stl.h>
 
 std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>> vpmr_wrapper(
-    const int n, const int d, const int q, const int m, const int nc, const double e, const std::string& k) {
+    const int n, const int d, const int q, const double m, const int nc, const double e, const std::string& k) {
     N = n;
     DIGIT = d;
     QUAD_ORDER = q;
@@ -408,10 +418,11 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
     if(!k.empty()) KERNEL = k;
 
     // check size
-    BigInt comb_max = comb(2 * N, N);
-    int comb_digit = 0;
+    BigInt comb_max = comb(4 * N, 2 * N);
+    int comb_digit = 1;
     while((comb_max /= 2) > 0) ++comb_digit;
-    comb_digit = std::max(5 * N, SCALE * comb_digit);
+    comb_digit += 4 * N;
+    comb_digit = static_cast<int>(std::max(1.5, SCALE) * static_cast<double>(comb_digit));
 
     if(0 == d) DIGIT = comb_digit;
     else if(comb_digit >= DIGIT) {
@@ -424,7 +435,7 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
 
     TOL.setPrecision(DIGIT);
 
-    MP_PI = const_pi(2 * DIGIT);
+    MP_PI = const_pi(DIGIT);
     MP_PI_HALF = MP_PI / 2;
 
     TOL /= 2;
@@ -449,12 +460,12 @@ PYBIND11_MODULE(_pyvpmr, m) {
 
     m.def(
         "vpmr", &vpmr_wrapper, pybind11::call_guard<pybind11::gil_scoped_release>(),
-        pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 6, pybind11::arg("nc") = 4, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "",
+        pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 1.5, pybind11::arg("nc") = 4, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "",
         "The VPMR Algorithm.\n\n"
         ":param n: number of terms (default: 10)\n"
         ":param d: number of precision bits (default: 512)\n"
         ":param q: quadrature order (default: 500)\n"
-        ":param m: precision multiplier (default: 6)\n"
+        ":param m: precision multiplier (default: 1.5)\n"
         ":param nc: maximum exponent (default: 4)\n"
         ":param e: tolerance (default: 1E-8)\n"
         ":param k: kernel function (default: exp(-t^2/4))\n"
