@@ -164,7 +164,8 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
     // step 5
     auto SS = SIG;
     for(auto I = 0; I < SS.size(); ++I)
-        if(SS(I) > std::numeric_limits<mpreal>::epsilon()) SS(I) = pow(SS(I), -.5);
+        if(SS(I) > std::numeric_limits<mpreal>::epsilon())
+            SS(I) = pow(SS(I), -.5);
         else {
             std::cout << "WARNING: Need to increase digits.\n";
             SS(I) = pow(std::numeric_limits<mpreal>::epsilon(), -.5);
@@ -260,8 +261,10 @@ std::tuple<cx_vec, cx_vec> vpmr() {
 
     auto ID = sort_index(M);
     for(int I = static_cast<int>(ID.size()) - 1; I >= 0; --I)
-        if(norm(M(ID[I])) < TOL) ID.erase(ID.begin() + I);
-        else break;
+        if(norm(M(ID[I])) < TOL)
+            ID.erase(ID.begin() + I);
+        else
+            break;
 
     std::cout << "[6/6] Done.\n\n";
 
@@ -346,8 +349,7 @@ int main(const int argc, const char** argv) {
     BigInt comb_max = comb(4 * N, 2 * N);
     int comb_digit = 1;
     while((comb_max /= 2) > 0) ++comb_digit;
-    comb_digit += 4 * N;
-    comb_digit = static_cast<int>(std::max(1.5, SCALE) * static_cast<double>(comb_digit));
+    comb_digit = std::max(64, static_cast<int>(std::max(1.5, SCALE) * static_cast<double>(comb_digit + 4 * N)));
 
     if(!has_digit)
         DIGIT = comb_digit;
@@ -421,10 +423,10 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
     BigInt comb_max = comb(4 * N, 2 * N);
     int comb_digit = 1;
     while((comb_max /= 2) > 0) ++comb_digit;
-    comb_digit += 4 * N;
-    comb_digit = static_cast<int>(std::max(1.5, SCALE) * static_cast<double>(comb_digit));
+    comb_digit = std::max(64, static_cast<int>(std::max(1.5, SCALE) * static_cast<double>(comb_digit + 4 * N)));
 
-    if(0 == d) DIGIT = comb_digit;
+    if(0 == d)
+        DIGIT = comb_digit;
     else if(comb_digit >= DIGIT) {
         std::cout << "WARNING: Too few digits to hold combinatorial number, resetting digits to " << comb_digit << ".\n";
         DIGIT = comb_digit;
