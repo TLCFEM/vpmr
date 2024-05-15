@@ -155,7 +155,7 @@ Options:
    -n <int>     number of terms (default: 10)
    -d <int>     number of precision bits (default: 512)
    -q <int>     quadrature order (default: 500)
-   -m <int>     precision multiplier (default: 1.5)
+   -m <float>   precision multiplier (default, minimum: 1.5)
    -nc <int>    controls the maximum exponent (default: 4)
    -e <float>   tolerance (default: 1E-8)
    -k <string>  file name of kernel function (default: exp(-t^2/4))
@@ -163,6 +163,11 @@ Options:
    -w           print weights
    -h           print this help message
 ```
+
+The minimum required precision can be estimated by the parameter $$n$$.
+The algorithm involves the computation of $$C^{4n}_{2n}$$ and $$2^{4n}$$.
+The number of precision bits shall be at least $$\log_2(C^{4n}_{2n})+4n$$.
+In the implementation, this number will be further multiplied by the parameter $$m$$.
 
 #### Example
 

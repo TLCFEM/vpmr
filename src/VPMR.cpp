@@ -308,17 +308,17 @@ int main(const int argc, const char** argv) {
     bool has_digit = false;
     for(auto I = 1; I < argc; ++I) {
         if(const auto token = std::string(argv[I]); token == "-nc")
-            NC = std::stoi(argv[++I]);
+            NC = std::max(1, std::stoi(argv[++I]));
         else if(token == "-n")
-            N = std::stoi(argv[++I]);
+            N = std::max(1, std::stoi(argv[++I]));
         else if(token == "-d") {
-            DIGIT = std::stoi(argv[++I]);
+            DIGIT = std::max(1, std::stoi(argv[++I]));
             has_digit = true;
         }
         else if(token == "-q")
-            QUAD_ORDER = std::stoi(argv[++I]);
+            QUAD_ORDER = std::max(1, std::stoi(argv[++I]));
         else if(token == "-m")
-            SCALE = std::stod(argv[++I]);
+            SCALE = std::max(1.5, std::stod(argv[++I]));
         else if(token == "-e")
             TOL = mpreal(argv[++I]);
         else if(token == "-w")
@@ -411,11 +411,11 @@ int main(const int argc, const char** argv) {
 
 std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>> vpmr_wrapper(
     const int n, const int d, const int q, const double m, const int nc, const double e, const std::string& k) {
-    N = n;
-    DIGIT = d;
-    QUAD_ORDER = q;
-    SCALE = m;
-    NC = nc;
+    N = std::max(1, n);
+    DIGIT = std::max(1, d);
+    QUAD_ORDER = std::max(1, q);
+    SCALE = std::max(1.5, m);
+    NC = std::max(1, nc);
     TOL = mpreal(e);
     if(!k.empty()) KERNEL = k;
 
