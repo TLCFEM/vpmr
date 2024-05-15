@@ -164,10 +164,10 @@ Options:
    -h           print this help message
 ```
 
-The minimum required precision can be estimated by the parameter $$n$$.
-The algorithm involves the computation of $$C^{4n}_{2n}$$ and $$2^{4n}$$.
-The number of precision bits shall be at least $$\log_2(C^{4n}_{2n})+4n$$.
-In the implementation, this number will be further multiplied by the parameter $$m$$.
+The minimum required precision can be estimated by the parameter $n$.
+The algorithm involves the computation of $C(4n,k)$ and $2^{4n}$.
+The number of precision bits shall be at least $4n+\log_2C(4n,2n)$.
+In the implementation, this number will be further multiplied by the parameter $m$.
 
 #### Example
 
