@@ -3,6 +3,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7770193.svg)](https://doi.org/10.5281/zenodo.7770193)
 [![codecov](https://codecov.io/gh/TLCFEM/vpmr/branch/master/graph/badge.svg?token=9QE6SQC3ZG)](https://codecov.io/gh/TLCFEM/vpmr)
 [![PyPI version](https://badge.fury.io/py/pyvpmr.svg)](https://pypi.org/project/pyvpmr/)
+[![Docker](https://img.shields.io/docker/image-size/tlcfem/vpmr)](https://hub.docker.com/r/tlcfem/vpmr/tags)
 
 [![gplv3-or-later](https://www.gnu.org/graphics/gplv3-or-later.svg)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
@@ -106,6 +107,12 @@ For example,
 ```bash
 wget -q https://raw.githubusercontent.com/TLCFEM/vpmr/master/Dockerfile
 docker build -t vpmr -f Dockerfile .
+```
+
+Or you simply pull using the following command.
+
+```bash
+docker pull tlcfem/vpmr
 ```
 
 #### Windows
