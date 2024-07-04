@@ -28,7 +28,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-22.04, macos-12 ]
+        os: [ ubuntu-24.04 ]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
           git submodule update --init --recursive
           cd eigen && git apply ../patch_size.patch && cd ..
       - name: CI Build Wheel
-        uses: pypa/cibuildwheel@v2.17
+        uses: pypa/cibuildwheel@v2.19
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
