@@ -1,6 +1,6 @@
 FROM debian:12
 
-RUN apt-get update -y && apt-get install -y cmake git g++ libtbb-dev libmpfr-dev libgmp-dev ninja-build
+RUN apt-get update -y && apt-get install -y cmake git g++ libtbb-dev libmpfr-dev libgmp-dev ninja-build python3-dev
 
 ARG UID=1000
 ARG GID=$UID
