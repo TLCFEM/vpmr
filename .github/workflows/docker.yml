@@ -23,4 +23,4 @@ jobs:
           context: .
           file: ./resource/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/vpmr:latest
+          tags: tlcfem/vpmr:latest
