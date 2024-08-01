@@ -8,7 +8,7 @@ jobs:
   debian:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
-    container: debian:buster
+    container: debian:bookworm
     steps:
       - name: Setup
         run: |
