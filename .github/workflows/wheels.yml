@@ -37,7 +37,7 @@ jobs:
           git submodule update --init --recursive
           cd eigen && git apply ../patch_size.patch && cd ..
       - name: CI Build Wheel
-        uses: pypa/cibuildwheel@v2.19
+        uses: pypa/cibuildwheel@v2.20
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
