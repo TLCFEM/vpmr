@@ -1,9 +1,11 @@
-*vpmr*.so
-*.egg-info
+__pycache__
 .cache
 .idea/
+.venv
 .vscode/
+*.egg-info
+*vpmr*.so
 build/
 cmake-build-*/
+venv
 wheelhouse
-__pycache__

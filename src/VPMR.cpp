@@ -284,10 +284,10 @@ int print_helper() {
     std::cout << "Usage: vpmr [options]\n\n";
     std::cout << "Options:\n\n";
     std::cout << "   -n <int>     number of terms (default: 10)\n";
+    std::cout << "   -c <int>     maximum exponent (default: 4)\n";
     std::cout << "   -d <int>     number of precision bits (default: 512)\n";
     std::cout << "   -q <int>     quadrature order (default: 500)\n";
     std::cout << "   -m <float>   precision multiplier (default: 1.5)\n";
-    std::cout << "   -nc <int>    controls the maximum exponent (default: 4)\n";
     std::cout << "   -e <float>   tolerance (default: 1E-8)\n";
     std::cout << "   -k <string>  file name of kernel function (default: exp(-t^2/4))\n";
     std::cout << "   -s           print singular values\n";
@@ -307,7 +307,7 @@ int main(const int argc, const char** argv) {
 
     bool has_digit = false;
     for(auto I = 1; I < argc; ++I) {
-        if(const auto token = std::string(argv[I]); token == "-nc")
+        if(const auto token = std::string(argv[I]); token == "-c")
             NC = std::max(1, std::stoi(argv[++I]));
         else if(token == "-n")
             N = std::max(1, std::stoi(argv[++I]));
@@ -376,12 +376,13 @@ int main(const int argc, const char** argv) {
     std::cout << std::scientific << std::setprecision(4);
 
     std::cout << "Using the following parameters:\n";
-    std::cout << "        nc = " << NC << ".\n";
-    std::cout << "         n = " << N << ".\n";
-    std::cout << "     order = " << QUAD_ORDER << ".\n";
-    std::cout << " precision = " << DIGIT << ".\n";
-    std::cout << " tolerance = " << (2 * TOL).toDouble() << ".\n";
-    std::cout << "    kernel = " << KERNEL << ".\n\n";
+    std::cout << "      terms = " << N << ".\n";
+    std::cout << "   exponent = " << NC << ".\n";
+    std::cout << "  precision = " << DIGIT << ".\n";
+    std::cout << "      order = " << QUAD_ORDER << ".\n";
+    std::cout << " multiplier = " << SCALE << ".\n";
+    std::cout << "  tolerance = " << (2 * TOL).toDouble() << ".\n";
+    std::cout << "     kernel = " << KERNEL << ".\n\n";
 
     try {
         // run VPMR algorithm
@@ -410,12 +411,12 @@ int main(const int argc, const char** argv) {
 #include <pybind11/stl.h>
 
 std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>> vpmr_wrapper(
-    const int n, const int d, const int q, const double m, const int nc, const double e, const std::string& k) {
+    const int n, const int d, const int q, const double m, const int c, const double e, const std::string& k) {
     N = std::max(1, n);
     DIGIT = std::max(1, d);
     QUAD_ORDER = std::max(1, q);
     SCALE = std::max(1.5, m);
-    NC = std::max(1, nc);
+    NC = std::max(1, c);
     TOL = mpreal(e);
     if(!k.empty()) KERNEL = k;
 
@@ -462,13 +463,13 @@ PYBIND11_MODULE(_pyvpmr, m) {
 
     m.def(
         "vpmr", &vpmr_wrapper, pybind11::call_guard<pybind11::gil_scoped_release>(),
-        pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 1.5, pybind11::arg("nc") = 4, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "",
+        pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 1.5, pybind11::arg("c") = 4, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "",
         "The VPMR Algorithm.\n\n"
         ":param n: number of terms (default: 10)\n"
+        ":param c: maximum exponent (default: 4)\n"
         ":param d: number of precision bits (default: 512)\n"
         ":param q: quadrature order (default: 500)\n"
         ":param m: precision multiplier (default: 1.5)\n"
-        ":param nc: maximum exponent (default: 4)\n"
         ":param e: tolerance (default: 1E-8)\n"
         ":param k: kernel function (default: exp(-t^2/4))\n"
         ":return: M, S\n");

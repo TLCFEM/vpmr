@@ -160,10 +160,10 @@ Usage: vpmr [options]
 Options:
 
    -n <int>     number of terms (default: 10)
+   -c <int>     maximum exponent (default: 4)
    -d <int>     number of precision bits (default: 512)
    -q <int>     quadrature order (default: 500)
    -m <float>   precision multiplier (default, minimum: 1.5)
-   -nc <int>    controls the maximum exponent (default: 4)
    -e <float>   tolerance (default: 1E-8)
    -k <string>  file name of kernel function (default: exp(-t^2/4))
    -s           print singular values
@@ -188,9 +188,9 @@ The output is:
 
 ```text
 Using the following parameters:
-        nc = 4.
-         n = 30.
+     terms = 30.
      order = 500.
+  exponent = 4.
  precision = 336.
  tolerance = 1.0000e-08.
     kernel = exp(-t*t/4).
