@@ -273,6 +273,7 @@ std::tuple<cx_vec, cx_vec> vpmr() {
 
 int print_helper() {
     std::cout << "--> \xF0\x9F\xA5\xB7 VPMR C++ Implementation <--\n\n";
+    std::cout << "Compiled on: " << __DATE__ << "\n\n";
     std::cout << "Usage: vpmr [options]\n\n";
     std::cout << "Options:\n\n";
     std::cout << "    -n, --max-terms             <int>     number of terms (default: 10)\n";
@@ -284,7 +285,7 @@ int print_helper() {
     std::cout << "    -k, --kernel                <string>  file name of kernel function (default uses: exp(-t^2/4))\n";
     std::cout << "    -s, --singular-values                 print singular values\n";
     std::cout << "    -w, --weights                         print weights\n";
-    std::cout << "    -h, --help                            print this help message\n";
+    std::cout << "    -h, --help                            print this help message\n\n";
     return 0;
 }
 
