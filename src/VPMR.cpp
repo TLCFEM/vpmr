@@ -15,10 +15,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 
-#include <iomanip>
+#include "VPMR.h"
 #include <mpfr/exprtk_mpfr_adaptor.hpp>
 #include <mutex>
-#include <string>
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/parallel_for.h>
 #include "BigInt.hpp"
@@ -30,17 +29,7 @@
 #include <Windows.h>
 #endif
 
-using namespace mpfr;
-
-bool OUTPUT_W = false;              // output W
-bool OUTPUT_EIG = false;            // output eigenvalues
-int NC = 4;                         // maximum exponent
-int N = 10;                         // number of terms
-int DIGIT = 512;                    // number of digits
-int QUAD_ORDER = 500;               // number of quadrature points
-double SCALE = 1.5;                 // scaling
-mpreal TOL = mpreal("1E-8", DIGIT); // tolerance
-std::string KERNEL = "exp(-t*t/4)"; // default kernel
+Config config;
 
 BigInt comb_impl(unsigned, unsigned);
 
@@ -72,7 +61,7 @@ public:
         symbol_table.add_variable("t", time);
         symbol_table.add_constants();
         expression.register_symbol_table(symbol_table);
-        return parser.compile(KERNEL, expression);
+        return parser.compile(config.kernel, expression);
     }
 
     mpreal value(const mpreal& t) {
@@ -95,12 +84,12 @@ public:
         : j(J) {}
 
     mpreal operator()(const int i, const mpreal& r) const {
-        if(value.find(i) == value.end()) value.insert(std::make_pair(i, kernel.value(-NC * log((mpreal(1, DIGIT) + cos(r)) >> 1))));
+        if(value.find(i) == value.end()) value.insert(std::make_pair(i, kernel.value(-config.max_exponent * log((mpreal(1, config.precision_bits) + cos(r)) >> 1))));
         return value[i] * cos(j * r);
     }
 };
 
-tbb::concurrent_unordered_map<int, mpreal> Integrand::value(QUAD_ORDER);
+tbb::concurrent_unordered_map<int, mpreal> Integrand::value(config.quadrature_order);
 
 using mat = Eigen::Matrix<mpreal, Eigen::Dynamic, Eigen::Dynamic>;
 using vec = Eigen::Matrix<mpreal, Eigen::Dynamic, 1>;
@@ -114,11 +103,11 @@ mat lyap(const vec& A, mat&& C) {
 }
 
 long pos(const vec& A) {
-    auto sum = mpreal(0, DIGIT);
+    auto sum = mpreal(0, config.precision_bits);
     long P = 0;
     for(auto I = A.size() - 1; I >= 0; --I) {
         sum += A(I);
-        if(sum > TOL) {
+        if(sum > config.tolerance) {
             P = I;
             break;
         }
@@ -138,7 +127,7 @@ mat lyap_rhs(const vec& M) {
 std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec& C) {
     // account for 4^j here separately
     vec W = A;
-    auto ONE = mpreal(1, DIGIT);
+    auto ONE = mpreal(1, config.precision_bits);
     for(auto I = 0; I < W.size(); ++I) W(I) = (ONE <<= 2);
 
     // step 3
@@ -151,7 +140,7 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
     const auto SVD = Eigen::BDCSVD<mat, Eigen::ComputeFullU>(S.transpose() * W.asDiagonal() * L);
     const auto& U = SVD.matrixU();
     const auto& SIG = SVD.singularValues();
-    if(OUTPUT_EIG) {
+    if(config.print_singular_value) {
         std::cout << "SIGMA = \n";
         for(auto I = 0; I < SIG.size(); ++I) std::cout << SIG(I).toString() << '\n';
     }
@@ -192,27 +181,30 @@ mpreal weight(const Quadrature& quad, const int j) {
     auto k_hat = [&quad](const int l) { return quad.integrate(Integrand(l)); };
     auto sgn_bit = [](const int l) { return l % 2 == 0 ? 1 : -1; };
 
+    const auto N = config.max_terms;
+    const auto D = config.precision_bits;
+
     if(0 == j) {
         mpreal result = k_hat(0) / 2;
         for(auto l = 1; l <= N; ++l) result += sgn_bit(l) * k_hat(l);
-        for(auto l = 1; l < N; ++l) result += sgn_bit(N + l) * mpreal(N - l, DIGIT) / mpreal(N, DIGIT) * k_hat(N + l);
+        for(auto l = 1; l < N; ++l) result += sgn_bit(N + l) * mpreal(N - l, D) / mpreal(N, D) * k_hat(N + l);
         return result;
     }
 
-    mpreal result{0, DIGIT};
+    mpreal result{0, D};
 
     if(j > N) {
         for(auto l = j - N; l < N; ++l)
-            result += sgn_bit(N + l - j) * mpreal((N - l) * (N + l), DIGIT) / mpreal(N * (N + l + j), DIGIT) *
-                mpreal(comb(N + l + j, N + l - j).to_string(), DIGIT) * k_hat(N + l);
+            result += sgn_bit(N + l - j) * mpreal((N - l) * (N + l), D) / mpreal(N * (N + l + j), D) *
+                mpreal(comb(N + l + j, N + l - j).to_string(), D) * k_hat(N + l);
     }
     else {
         for(auto l = j; l <= N; ++l)
-            result += sgn_bit(l - j) * mpreal(l, DIGIT) / mpreal(l + j, DIGIT) *
-                mpreal(comb(l + j, l - j).to_string(), DIGIT) * k_hat(l);
+            result += sgn_bit(l - j) * mpreal(l, D) / mpreal(l + j, D) *
+                mpreal(comb(l + j, l - j).to_string(), D) * k_hat(l);
         for(auto l = 1; l < N; ++l)
-            result += sgn_bit(N + l - j) * mpreal((N - l) * (N + l), DIGIT) / mpreal(N * (N + l + j), DIGIT) *
-                mpreal(comb(N + l + j, N + l - j).to_string(), DIGIT) * k_hat(N + l);
+            result += sgn_bit(N + l - j) * mpreal((N - l) * (N + l), D) / mpreal(N * (N + l + j), D) *
+                mpreal(comb(N + l + j, N + l - j).to_string(), D) * k_hat(N + l);
     }
 
     // unlike the original paper, we do not multiply 4^j here
@@ -235,16 +227,16 @@ std::vector<long> sort_index(const cx_vec& v) {
 }
 
 std::tuple<cx_vec, cx_vec> vpmr() {
-    const auto quad = Quadrature(QUAD_ORDER);
+    const auto quad = Quadrature(config.quadrature_order);
 
-    vec W = vec::Zero(2 * N);
+    vec W = vec::Zero(2 * config.max_terms);
     for(auto I = 0; I < W.size();) {
         W(I) = weight(quad, I);
         std::cout << "\r[1/6] Computing weights... [" << ++I << '/' << W.size() << ']' << std::flush;
     }
     std::cout << std::showpos << std::setprecision(16) << '\n';
 
-    if(OUTPUT_W) {
+    if(config.print_weight) {
         std::cout << "W = \n";
         for(auto I = 0; I < W.size(); ++I) std::cout << W(I).toString() << '\n';
     }
@@ -252,7 +244,7 @@ std::tuple<cx_vec, cx_vec> vpmr() {
     // step 1
     vec A = vec::Zero(W.size() - 1), B = vec::Zero(A.size()), C = vec::Zero(A.size());
     for(decltype(W.size()) I = 0, J = 1; I < A.size(); ++I, ++J) {
-        A(I) = -mpreal(J, DIGIT) / NC;
+        A(I) = -mpreal(J, config.precision_bits) / config.max_exponent;
         B(I) = sqrt(abs(W(J)));
         C(I) = sgn(W(J)) * B(I);
     }
@@ -261,18 +253,18 @@ std::tuple<cx_vec, cx_vec> vpmr() {
 
     auto ID = sort_index(M);
     for(int I = static_cast<int>(ID.size()) - 1; I >= 0; --I)
-        if(norm(M(ID[I])) < TOL)
+        if(norm(M(ID[I])) < config.tolerance)
             ID.erase(ID.begin() + I);
         else
             break;
 
     std::cout << "[6/6] Done.\n\n";
 
-    if(abs(W(0)) < TOL) return std::make_tuple(M(ID), -S(ID));
+    if(abs(W(0)) < config.tolerance) return std::make_tuple(M(ID), -S(ID));
 
     cx_vec MM = cx_vec::Zero(static_cast<long>(ID.size()) + 1), SS = cx_vec::Zero(static_cast<long>(ID.size()) + 1);
     MM(0) = W(0);
-    SS(0) = mpreal(0, DIGIT);
+    SS(0) = mpreal(0, config.precision_bits);
     MM.tail(ID.size()) = M(ID);
     SS.tail(ID.size()) = -S(ID);
 
@@ -283,16 +275,16 @@ int print_helper() {
     std::cout << "--> \xF0\x9F\xA5\xB7 VPMR C++ Implementation <--\n\n";
     std::cout << "Usage: vpmr [options]\n\n";
     std::cout << "Options:\n\n";
-    std::cout << "   -n <int>     number of terms (default: 10)\n";
-    std::cout << "   -c <int>     maximum exponent (default: 4)\n";
-    std::cout << "   -d <int>     number of precision bits (default: 512)\n";
-    std::cout << "   -q <int>     quadrature order (default: 500)\n";
-    std::cout << "   -m <float>   precision multiplier (default: 1.5)\n";
-    std::cout << "   -e <float>   tolerance (default: 1E-8)\n";
-    std::cout << "   -k <string>  file name of kernel function (default: exp(-t^2/4))\n";
-    std::cout << "   -s           print singular values\n";
-    std::cout << "   -w           print weights\n";
-    std::cout << "   -h           print this help message\n";
+    std::cout << "    -n, --max-terms             <int>     number of terms (default: 10)\n";
+    std::cout << "    -c, --max-exponent          <int>     maximum exponent (default: 4)\n";
+    std::cout << "    -d, --precision-bits        <int>     number of precision bits (default: 512)\n";
+    std::cout << "    -q, --quadrature-order      <int>     quadrature order (default: 500)\n";
+    std::cout << "    -m, --precision-multiplier  <float>   precision multiplier (default: 1.5)\n";
+    std::cout << "    -e, --tolerance             <float>   tolerance (default: 1E-8)\n";
+    std::cout << "    -k, --kernel                <string>  file name of kernel function (default uses: exp(-t^2/4))\n";
+    std::cout << "    -s, --singular-values                 print singular values\n";
+    std::cout << "    -w, --weights                         print weights\n";
+    std::cout << "    -h, --help                            print this help message\n";
     return 0;
 }
 
@@ -307,38 +299,38 @@ int main(const int argc, const char** argv) {
 
     bool has_digit = false;
     for(auto I = 1; I < argc; ++I) {
-        if(const auto token = std::string(argv[I]); token == "-c")
-            NC = std::max(1, std::stoi(argv[++I]));
-        else if(token == "-n")
-            N = std::max(1, std::stoi(argv[++I]));
-        else if(token == "-d") {
-            DIGIT = std::max(1, std::stoi(argv[++I]));
+        if(const auto token = std::string(argv[I]); token == "-n" || token == "--max-terms")
+            config.max_terms = std::max(1, std::stoi(argv[++I]));
+        else if(token == "-c" || token == "--max-exponent")
+            config.max_exponent = std::max(1, std::stoi(argv[++I]));
+        else if(token == "-d" || token == "--precision-bits") {
+            config.precision_bits = std::max(1, std::stoi(argv[++I]));
             has_digit = true;
         }
-        else if(token == "-q")
-            QUAD_ORDER = std::max(1, std::stoi(argv[++I]));
-        else if(token == "-m")
-            SCALE = std::max(1.5, std::stod(argv[++I]));
-        else if(token == "-e")
-            TOL = mpreal(argv[++I]);
-        else if(token == "-w")
-            OUTPUT_W = true;
-        else if(token == "-s")
-            OUTPUT_EIG = true;
-        else if(token == "-h")
-            return print_helper();
-        else if(token == "-k") {
+        else if(token == "-q" || token == "--quadrature-order")
+            config.quadrature_order = std::max(1, std::stoi(argv[++I]));
+        else if(token == "-m" || token == "--precision-multiplier")
+            config.precision_multiplier = std::max(1.5, std::stod(argv[++I]));
+        else if(token == "-e" || token == "--tolerance")
+            config.tolerance = mpreal(argv[++I]);
+        else if(token == "-k" || token == "--kernel") {
             const std::string file_name(argv[++I]);
             std::ifstream file(file_name);
             if(!file.is_open()) {
                 std::cerr << "Cannot open file: " << file_name << std::endl;
                 return 1;
             }
-            KERNEL = "";
+            config.kernel = "";
             std::string line;
-            while(std::getline(file, line)) KERNEL += line;
+            while(std::getline(file, line)) config.kernel += line;
             file.close();
         }
+        else if(token == "-w" || token == "--weights")
+            config.print_weight = true;
+        else if(token == "-s" || token == "--singular-values")
+            config.print_singular_value = true;
+        else if(token == "-h" || token == "--help")
+            return print_helper();
         else {
             std::cerr << "Unknown option: " << token << std::endl;
             return 1;
@@ -346,43 +338,34 @@ int main(const int argc, const char** argv) {
     }
 
     // check size
-    BigInt comb_max = comb(4 * N, 2 * N);
+    BigInt comb_max = comb(4 * config.max_terms, 2 * config.max_terms);
     int comb_digit = 1;
     while((comb_max /= 2) > 0) ++comb_digit;
-    comb_digit = std::max(64, static_cast<int>(std::max(1.5, SCALE) * static_cast<double>(comb_digit + 4 * N)));
+    comb_digit = std::max(64, static_cast<int>(std::max(1.5, config.precision_multiplier) * static_cast<double>(comb_digit + 4 * config.max_terms)));
 
     if(!has_digit)
-        DIGIT = comb_digit;
-    else if(comb_digit >= DIGIT) {
+        config.precision_bits = comb_digit;
+    else if(comb_digit >= config.precision_bits) {
         std::cout << "WARNING: Too few digits to hold combinatorial number, resetting digits to " << comb_digit << ".\n";
-        DIGIT = comb_digit;
+        config.precision_bits = comb_digit;
     }
 
     // set precision
-    mpreal::set_default_prec(DIGIT);
+    mpreal::set_default_prec(config.precision_bits);
 
-    TOL.setPrecision(DIGIT);
+    config.tolerance.setPrecision(config.precision_bits);
 
-    MP_PI = const_pi(DIGIT);
+    MP_PI = const_pi(config.precision_bits);
     MP_PI_HALF = MP_PI / 2;
 
-    TOL /= 2;
+    config.tolerance /= 2;
 
     if(!kernel.compile()) {
-        std::cerr << "Cannot compile kernel function: " << KERNEL << ".\n";
+        std::cerr << "Cannot compile kernel function: " << config.kernel << ".\n";
         return 1;
     }
 
-    std::cout << std::scientific << std::setprecision(4);
-
-    std::cout << "Using the following parameters:\n";
-    std::cout << "      terms = " << N << ".\n";
-    std::cout << "   exponent = " << NC << ".\n";
-    std::cout << "  precision = " << DIGIT << ".\n";
-    std::cout << "      order = " << QUAD_ORDER << ".\n";
-    std::cout << " multiplier = " << SCALE << ".\n";
-    std::cout << "  tolerance = " << (2 * TOL).toDouble() << ".\n";
-    std::cout << "     kernel = " << KERNEL << ".\n\n";
+    config.print();
 
     try {
         // run VPMR algorithm
@@ -405,48 +388,48 @@ int main(const int argc, const char** argv) {
 
     return 0;
 }
-#else
+// #else
 #include <pybind11/complex.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>> vpmr_wrapper(
-    const int n, const int d, const int q, const double m, const int c, const double e, const std::string& k) {
-    N = std::max(1, n);
-    DIGIT = std::max(1, d);
-    QUAD_ORDER = std::max(1, q);
-    SCALE = std::max(1.5, m);
-    NC = std::max(1, c);
-    TOL = mpreal(e);
-    if(!k.empty()) KERNEL = k;
+    const int n, const int c, const int d, const int q, const double m, const double e, const std::string& k) {
+    config.max_terms = std::max(1, n);
+    config.max_exponent = std::max(1, c);
+    config.precision_bits = std::max(1, d);
+    config.quadrature_order = std::max(1, q);
+    config.precision_multiplier = std::max(1.5, m);
+    config.tolerance = mpreal(e);
+    if(!k.empty()) config.kernel = k;
 
     // check size
-    BigInt comb_max = comb(4 * N, 2 * N);
+    BigInt comb_max = comb(4 * config.max_terms, 2 * config.max_terms);
     int comb_digit = 1;
     while((comb_max /= 2) > 0) ++comb_digit;
-    comb_digit = std::max(64, static_cast<int>(std::max(1.5, SCALE) * static_cast<double>(comb_digit + 4 * N)));
+    comb_digit = std::max(64, static_cast<int>(std::max(1.5, config.precision_multiplier) * static_cast<double>(comb_digit + 4 * config.max_terms)));
 
     if(0 == d)
-        DIGIT = comb_digit;
-    else if(comb_digit >= DIGIT) {
+        config.precision_bits = comb_digit;
+    else if(comb_digit >= config.precision_bits) {
         std::cout << "WARNING: Too few digits to hold combinatorial number, resetting digits to " << comb_digit << ".\n";
-        DIGIT = comb_digit;
+        config.precision_bits = comb_digit;
     }
 
     // set precision
-    mpreal::set_default_prec(DIGIT);
+    mpreal::set_default_prec(config.precision_bits);
 
-    TOL.setPrecision(DIGIT);
+    config.tolerance.setPrecision(config.precision_bits);
 
-    MP_PI = const_pi(DIGIT);
+    MP_PI = const_pi(config.precision_bits);
     MP_PI_HALF = MP_PI / 2;
 
-    TOL /= 2;
+    config.tolerance /= 2;
 
     std::vector<std::complex<double>> mm, ss;
 
     if(!kernel.compile()) {
-        std::cerr << "Cannot compile kernel function: " << KERNEL << ".\n";
+        std::cerr << "Cannot compile kernel function: " << config.kernel << ".\n";
         return {mm, ss};
     }
 
@@ -463,7 +446,7 @@ PYBIND11_MODULE(_pyvpmr, m) {
 
     m.def(
         "vpmr", &vpmr_wrapper, pybind11::call_guard<pybind11::gil_scoped_release>(),
-        pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 1.5, pybind11::arg("c") = 4, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "",
+        pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("c") = 4, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 1.5, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "",
         "The VPMR Algorithm.\n\n"
         ":param n: number of terms (default: 10)\n"
         ":param c: maximum exponent (default: 4)\n"

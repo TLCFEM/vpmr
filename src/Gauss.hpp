@@ -18,22 +18,19 @@
 #pragma once
 
 #include <cmath>
-#include <iomanip>
 #include <memory>
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_reduce.h>
-#include "mpreal.h"
-
-using namespace mpfr;
 
 inline mpreal MP_PI = const_pi();
 inline mpreal MP_PI_HALF{MP_PI / 2};
-extern int DIGIT;
+
+extern Config config;
 
 class Evaluation {
-    const mpreal ONE = mpreal(1, DIGIT);
-    const mpreal TWO = mpreal(2, DIGIT);
+    const mpreal ONE = mpreal(1, config.precision_bits);
+    const mpreal TWO = mpreal(2, config.precision_bits);
 
     const size_t degree;
 
@@ -43,13 +40,13 @@ public:
     explicit Evaluation(const mpreal& X, const size_t D)
         : degree(D)
         , _x(X)
-        , _v(1, DIGIT)
-        , _d(0, DIGIT) { this->evaluate(X); }
+        , _v(1, config.precision_bits)
+        , _d(0, config.precision_bits) { this->evaluate(X); }
 
     void evaluate(const mpreal& x) {
         this->_x = x;
 
-        mpreal left{x}, right{1, DIGIT};
+        mpreal left{x}, right{1, config.precision_bits};
 
         for(size_t i = 2; i <= degree; ++i) {
             this->_v = ((TWO * i - ONE) * x * left - (i - ONE) * right) / i;
@@ -69,8 +66,8 @@ public:
 };
 
 class LegendrePolynomial {
-    const mpreal ONE = mpreal(1, DIGIT);
-    const mpreal TWO = mpreal(2, DIGIT);
+    const mpreal ONE = mpreal(1, config.precision_bits);
+    const mpreal TWO = mpreal(2, config.precision_bits);
 
 public:
     const size_t degree;
@@ -84,9 +81,9 @@ public:
         , _r(std::make_unique<mpreal[]>(degree))
         , _w(std::make_unique<mpreal[]>(degree)) {
         tbb::parallel_for(static_cast<size_t>(0), degree / 2 + 1, [&](const size_t i) {
-            mpreal dr{1, DIGIT};
+            mpreal dr{1, config.precision_bits};
 
-            Evaluation eval(cos(MP_PI * mpreal(4 * i + 3, DIGIT) / mpreal(4 * degree + 2, DIGIT)), degree);
+            Evaluation eval(cos(MP_PI * mpreal(4 * i + 3, config.precision_bits) / mpreal(4 * degree + 2, config.precision_bits)), degree);
             do {
                 dr = eval.v() / eval.d();
                 eval.evaluate(eval.x() - dr);
@@ -118,12 +115,12 @@ public:
         : poly(D) {}
 
     template<typename Function> mpreal integrate(Function&& f) const {
-        // mpreal sum{0, DIGIT};
+        // mpreal sum{0, config.precision_bits};
         // for (int i = 0; i < int(poly.degree); ++i)
         //     sum += poly.weight(i) * f(i, poly.root(i));
         // return sum;
         return tbb::parallel_deterministic_reduce(
-            tbb::blocked_range<int>(0, static_cast<int>(poly.degree)), mpreal(0, DIGIT),
+            tbb::blocked_range<int>(0, static_cast<int>(poly.degree)), mpreal(0, config.precision_bits),
             [&](const tbb::blocked_range<int>& r, mpreal running_total) {
                 for(auto i = r.begin(); i < r.end(); ++i) running_total += poly.weight(i) * f(i, poly.root(i));
                 return running_total;
