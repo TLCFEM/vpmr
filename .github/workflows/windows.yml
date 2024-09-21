@@ -4,6 +4,8 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+env:
+  VPMR_VERSION: ""
 jobs:
   windows:
     runs-on: windows-2022
