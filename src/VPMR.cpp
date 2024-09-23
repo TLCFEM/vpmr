@@ -89,7 +89,7 @@ public:
     }
 };
 
-tbb::concurrent_unordered_map<int, mpreal> Integrand::value(config.quadrature_order);
+tbb::concurrent_unordered_map<int, mpreal> Integrand::value(100);
 
 using mat = Eigen::Matrix<mpreal, Eigen::Dynamic, Eigen::Dynamic>;
 using vec = Eigen::Matrix<mpreal, Eigen::Dynamic, 1>;

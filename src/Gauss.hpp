@@ -98,8 +98,6 @@ public:
             this->_r[i] = -this->_r[degree - i - 1];
             this->_w[i] = this->_w[degree - i - 1];
         });
-
-        tbb::parallel_for(static_cast<size_t>(0), degree, [&](const size_t i) { this->_r[i] = MP_PI_HALF * this->_r[i] + MP_PI_HALF; });
     }
 
     [[nodiscard]] mpreal root(const int i) const { return this->_r[i]; }
@@ -122,7 +120,7 @@ public:
         return tbb::parallel_deterministic_reduce(
             tbb::blocked_range<int>(0, static_cast<int>(poly.degree)), mpreal(0, config.precision_bits),
             [&](const tbb::blocked_range<int>& r, mpreal running_total) {
-                for(auto i = r.begin(); i < r.end(); ++i) running_total += poly.weight(i) * f(i, poly.root(i));
+                for(auto i = r.begin(); i < r.end(); ++i) running_total += poly.weight(i) * f(i, MP_PI_HALF * poly.root(i) + MP_PI_HALF);
                 return running_total;
             },
             std::plus<>());
