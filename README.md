@@ -113,6 +113,8 @@ Or you simply pull using the following command.
 
 ```bash
 docker pull tlcfem/vpmr
+# or using GitHub Container Registry
+docker pull ghcr.io/tlcfem/vmpr
 ```
 
 #### Windows
