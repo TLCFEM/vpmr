@@ -8,7 +8,7 @@ RUN cd eigen && git apply --ignore-space-change --ignore-whitespace ../patch_siz
 RUN mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make
 
 FROM debian AS runtime
-RUN apt-get update && apt-get install -y libtbb12 libmpfr6 libgmp10
+RUN apt-get update && apt-get install -y libtbb12 libmpfr6 libgmp10 && apt-get clean -y
 COPY --from=builder /vpmr/build/vpmr /usr/bin/vpmr
 ENTRYPOINT ["/usr/bin/vpmr"]
 CMD ["-h"]
