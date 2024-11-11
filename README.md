@@ -240,6 +240,7 @@ The file should contain the kernel expressed as a function of variable `t`.
 
 The `exprtk` is used to parse the expression and compute the value.
 The provided kernel function must be valid and supported by `exprtk`.
+Check the [documentation](https://www.partow.net/programming/exprtk/) regardning how to write a valid expression.
 
 For example, to compute the approximation of `exp(-t^2/10)`, one can create a file `kernel.txt` with the following
 content:
