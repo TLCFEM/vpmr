@@ -7,6 +7,7 @@
 [submodule "exprtk.git"]
 	path = exprtk
 	url = https://github.com/ArashPartow/exprtk.git
+	branch = release
 [submodule "exprtk-custom-types.git"]
 	path = exprtk-custom-types
 	url = https://github.com/ArashPartow/exprtk-custom-types.git
