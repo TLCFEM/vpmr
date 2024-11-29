@@ -28,8 +28,6 @@ inline mpreal MP_PI_HALF{MP_PI / 2};
 
 extern Config config;
 
-extern tbb::affinity_partitioner ap;
-
 class Evaluation {
     const mpreal ONE = mpreal(1, config.precision_bits);
     const mpreal TWO = mpreal(2, config.precision_bits);
@@ -68,6 +66,8 @@ public:
 };
 
 class LegendrePolynomial {
+    static tbb::affinity_partitioner ap;
+
     const mpreal ONE = mpreal(1, config.precision_bits);
     const mpreal TWO = mpreal(2, config.precision_bits);
 
@@ -104,6 +104,8 @@ public:
 
     [[nodiscard]] mpreal weight(const int i) const { return this->_w[i]; }
 };
+
+tbb::affinity_partitioner LegendrePolynomial::ap{};
 
 class Quadrature {
     LegendrePolynomial poly;

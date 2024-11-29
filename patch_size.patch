@@ -1,5 +1,5 @@
 diff --git a/Eigen/src/SVD/BDCSVD.h b/Eigen/src/SVD/BDCSVD.h
-index 6b85d1d5a..81aa7fbf5 100644
+index 6b85d1d5a..f7d023c7a 100644
 --- a/Eigen/src/SVD/BDCSVD.h
 +++ b/Eigen/src/SVD/BDCSVD.h
 @@ -30,6 +30,10 @@
@@ -8,7 +8,7 @@ index 6b85d1d5a..81aa7fbf5 100644
  
 +#include <tbb/parallel_reduce.h>
 +
-+tbb::affinity_partitioner ap;
++static tbb::affinity_partitioner ap;
 +
  #ifdef EIGEN_BDCSVD_DEBUG_VERBOSE
  #include <iostream>
