@@ -28,6 +28,8 @@ inline mpreal MP_PI_HALF{MP_PI / 2};
 
 extern Config config;
 
+extern tbb::affinity_partitioner ap;
+
 class Evaluation {
     const mpreal ONE = mpreal(1, config.precision_bits);
     const mpreal TWO = mpreal(2, config.precision_bits);
@@ -91,13 +93,11 @@ public:
             while(abs(dr) > std::numeric_limits<mpreal>::epsilon());
 
             this->_r[i] = eval.x();
-            this->_w[i] = TWO / ((ONE - eval.x() * eval.x()) * eval.d() * eval.d());
-        });
+            this->_w[i] = TWO / ((ONE - eval.x() * eval.x()) * eval.d() * eval.d()); }, ap);
 
         tbb::parallel_for(degree / 2, degree, [&](const size_t i) {
             this->_r[i] = -this->_r[degree - i - 1];
-            this->_w[i] = this->_w[degree - i - 1];
-        });
+            this->_w[i] = this->_w[degree - i - 1]; }, ap);
     }
 
     [[nodiscard]] mpreal root(const int i) const { return this->_r[i]; }
