@@ -258,6 +258,13 @@ echo "exp(-t*t/10)" > kernel.txt
 
 ![exp(-t^2/10)](resource/arbitrary.png)
 
+## Performance
+
+The computation of weights, that involves integrals, and SVD are parallelised.
+A typical profiling would yield something similar to the following.
+
+![profiling](resource/profile.png)
+
 ## Binary
 
 The binary requires available `gmp`, `mpfr` and `tbb` libraries.
