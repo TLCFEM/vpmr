@@ -4,6 +4,15 @@ project(vpmr)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -DNDEBUG")
 
+
+option(USE_AVX2 "Use AVX2" OFF)
+
+if (USE_AVX2)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
+    endif ()
+endif ()
+
 include_directories(eigen)
 include_directories(eigen/unsupported)
 include_directories(mpreal)
@@ -51,3 +60,5 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         target_compile_options(_pyvpmr PRIVATE "-Wa,-mbig-obj")
     endif ()
 endif ()
+
+message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
