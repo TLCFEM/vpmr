@@ -8,7 +8,6 @@ WORKDIR /vpmr
 
 RUN git submodule update --init --recursive
 RUN cd eigen && git apply ../patch_size.patch && cd ..
-RUN sed -i 's/3.24/3.13/g' CMakeLists.txt
 RUN mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make
 
 FROM ubuntu:22.04 as runtime

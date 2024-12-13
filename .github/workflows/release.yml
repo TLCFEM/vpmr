@@ -23,7 +23,6 @@ jobs:
           git config --global --add safe.directory /__w/vpmr/vpmr
           git submodule update --init --recursive
           cd eigen && git apply ../patch_size.patch && cd ..
-          sed -i 's/3.24/3.13/g' CMakeLists.txt
           mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release ..
           make -j"$(nproc)"
       - name: AppImage

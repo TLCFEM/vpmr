@@ -27,7 +27,6 @@ jobs:
         run: |
           git submodule update --init --recursive
           cd eigen && git apply --ignore-space-change --ignore-whitespace ../patch_size.patch && cd ..
-          sed -i 's/3.24/3.13/g' CMakeLists.txt
           mkdir build && cd build
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
           cmake --build .
