@@ -43,7 +43,6 @@ dependencies = [
 [tool.cibuildwheel]
 archs = ["auto64"]
 skip = [
-    "*musl*",
     "*pp*",
 ]
 
@@ -54,3 +53,7 @@ before-all = "brew install tbb mpfr gmp"
 [[tool.cibuildwheel.overrides]]
 select = "*manylinux*"
 before-all = "yum install -y gcc-c++ tbb-devel mpfr-devel gmp-devel"
+
+[[tool.cibuildwheel.overrides]]
+select = "*musllinux*"
+before-all = "apk add gcc-c++ onetbb-dev mpfr-dev gmp-dev"
