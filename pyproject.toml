@@ -42,9 +42,7 @@ dependencies = [
 
 [tool.cibuildwheel]
 archs = ["auto64"]
-skip = [
-    "*pp*",
-]
+skip = ["*pp*"]
 
 [[tool.cibuildwheel.overrides]]
 select = "*macosx*"
@@ -56,4 +54,4 @@ before-all = "yum install -y gcc-c++ tbb-devel mpfr-devel gmp-devel"
 
 [[tool.cibuildwheel.overrides]]
 select = "*musllinux*"
-before-all = "apk add gcc-c++ onetbb-dev mpfr-dev gmp-dev"
+before-all = "apk add g++ onetbb-dev mpfr-dev gmp-dev"
