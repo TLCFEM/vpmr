@@ -64,13 +64,13 @@ On RPM-based Linux distributions (using `dnf`), if you are:
    available), `sudo dnf install -y gcc-c++ tbb-devel mpfr-devel gmp-devel`
 2. using the packaged binary (wheels are available), `sudo dnf install -y gmp mpfr tbb`
 
-On DEB-based Linux distributions (using `apt`), you need to `sudo apt install -y libtbb-dev libmpfr-dev libgmp-dev`.
+On DEB-based Linux distributions (using `apt`), you need to `sudo apt install -y g++ libtbb-dev libmpfr-dev libgmp-dev`.
 
 On macOS, you need to `brew install tbb mpfr gmp`.
 
 Then install the package with `pip`.
 
-```
+```bash
 pip install pyvpmr
 ```
 
