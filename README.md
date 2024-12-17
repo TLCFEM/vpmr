@@ -94,66 +94,6 @@ if __name__ == '__main__':
     plot(m, s, kernel)
 ```
 
-### Compile Binary
-
-> [!WARNING]
-> The application relies on `eigen` and `exprtk`, which depend on very heavy usage of templates.
-> The compilation would take minutes and around 2 GB memory.
-> You need to install libraries `gmp`, `mpfr` and `tbb` before compiling.
-
-#### Docker
-
-To avoid the hassle of installing dependencies, you can use the provided `Dockerfile`.
-For example,
-
-```bash
-wget -q https://raw.githubusercontent.com/TLCFEM/vpmr/master/Dockerfile
-docker build -t vpmr -f Dockerfile .
-```
-
-Or you simply pull using the following command.
-
-```bash
-docker pull tlcfem/vpmr
-# or using GitHub Container Registry
-docker pull ghcr.io/tlcfem/vmpr
-```
-
-#### Windows
-
-Use the following instructions based on [MSYS2](https://www.msys2.org/), or follow the Linux instructions below with
-WSL.
-
-```bash
-# install necessary packages
-pacman -S git mingw-w64-x86_64-cmake mingw-w64-x86_64-tbb mingw-w64-x86_64-gcc mingw-w64-x86_64-ninja mingw-w64-x86_64-gmp mingw-w64-x86_64-mpfr
-# clone the repository
-git clone --depth 1 https://github.com/TLCFEM/vpmr.git
-# initialise submodules
-cd vpmr
-git submodule update --init --recursive
-# apply patch to enable parallel evaluation of some loops in SVD
-cd eigen && git apply --ignore-space-change --ignore-whitespace ../patch_size.patch && cd ..
-# configure and compile
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release .
-ninja
-```
-
-#### Linux
-
-The following is based on Fedora.
-
-```bash
-sudo dnf install gcc g++ gfortran cmake git -y
-sudo dnf install tbb-devel mpfr-devel gmp-devel -y
-git clone --depth 1 https://github.com/TLCFEM/vpmr.git
-cd vpmr
-git submodule update --init --recursive
-cd eigen && git apply --ignore-space-change --ignore-whitespace ../patch_size.patch && cd ..
-cmake -DCMAKE_BUILD_TYPE=Release .
-make
-```
-
 ### Usage
 
 All available options are:
@@ -264,6 +204,66 @@ The computation of weights, that involves integrals, and SVD are parallelised.
 A typical profiling would yield something similar to the following.
 
 ![profiling](resource/profile.png)
+
+## Compilation
+
+> [!WARNING]
+> The application relies on `eigen` and `exprtk`, which depend on very heavy usage of templates.
+> The compilation would take minutes and around 2 GB memory.
+> You need to install libraries `gmp`, `mpfr` and `tbb` before compiling.
+
+### Docker
+
+To avoid the hassle of installing dependencies, you can use the provided `Dockerfile`.
+For example,
+
+```bash
+wget -q https://raw.githubusercontent.com/TLCFEM/vpmr/master/Dockerfile
+docker build -t vpmr -f Dockerfile .
+```
+
+Or you simply pull using the following command.
+
+```bash
+docker pull tlcfem/vpmr
+# or using GitHub Container Registry
+docker pull ghcr.io/tlcfem/vmpr
+```
+
+### Windows
+
+Use the following instructions based on [MSYS2](https://www.msys2.org/), or follow the Linux instructions below with
+WSL.
+
+```bash
+# install necessary packages
+pacman -S git mingw-w64-x86_64-cmake mingw-w64-x86_64-tbb mingw-w64-x86_64-gcc mingw-w64-x86_64-ninja mingw-w64-x86_64-gmp mingw-w64-x86_64-mpfr
+# clone the repository
+git clone --depth 1 https://github.com/TLCFEM/vpmr.git
+# initialise submodules
+cd vpmr
+git submodule update --init --recursive
+# apply patch to enable parallel evaluation of some loops in SVD
+cd eigen && git apply --ignore-space-change --ignore-whitespace ../patch_size.patch && cd ..
+# configure and compile
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release .
+ninja
+```
+
+### Linux
+
+The following is based on Fedora.
+
+```bash
+sudo dnf install gcc g++ gfortran cmake git -y
+sudo dnf install tbb-devel mpfr-devel gmp-devel -y
+git clone --depth 1 https://github.com/TLCFEM/vpmr.git
+cd vpmr
+git submodule update --init --recursive
+cd eigen && git apply --ignore-space-change --ignore-whitespace ../patch_size.patch && cd ..
+cmake -DCMAKE_BUILD_TYPE=Release .
+make
+```
 
 ## Binary
 
