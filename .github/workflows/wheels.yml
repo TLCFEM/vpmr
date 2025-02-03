@@ -7,7 +7,7 @@ on:
 jobs:
   build_sdist:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,7 +26,7 @@ jobs:
           path: dist/*.tar.gz
   install_sdist:
     name: Install
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [ build_sdist ]
     steps:
       - name: Download
@@ -73,7 +73,7 @@ jobs:
   upload_all:
     name: Upload
     needs: [ build_wheels, install_sdist ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: contains(github.event.head_commit.message, '[publish]')
     steps:
       - name: Prepare

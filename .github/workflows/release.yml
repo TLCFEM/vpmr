@@ -8,7 +8,7 @@ env:
   VPMR_VERSION: ""
 jobs:
   debian:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 10
     container: debian:bookworm
     steps:
