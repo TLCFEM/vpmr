@@ -42,11 +42,10 @@ endif ()
 
 add_executable(vpmr src/VPMR.cpp)
 
-find_package(Python3 COMPONENTS Development Interpreter)
-if (Python3_FOUND)
+find_package(Python 3 COMPONENTS Development Interpreter)
+if (Python_FOUND)
     add_subdirectory(pybind11)
-    message(STATUS "Python3: ${Python3_VERSION}")
-    include_directories(${Python3_INCLUDE_DIRS})
+    message(STATUS "Python3: ${Python_VERSION}")
 
     pybind11_add_module(_pyvpmr src/VPMR.cpp)
     target_compile_definitions(_pyvpmr PRIVATE PYVPMR)
