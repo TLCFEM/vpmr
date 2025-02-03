@@ -4,7 +4,6 @@ project(vpmr)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -DNDEBUG")
 
-
 option(USE_AVX2 "Use AVX2" OFF)
 
 if (USE_AVX2)
@@ -45,6 +44,7 @@ add_executable(vpmr src/VPMR.cpp)
 
 find_package(Python3 COMPONENTS Development Interpreter)
 if (Python3_FOUND)
+    set(_pybind11_findpython_default OFF)
     message(STATUS "Python3: ${Python3_VERSION}")
     include_directories(${Python3_INCLUDE_DIRS})
     add_subdirectory(pybind11)
