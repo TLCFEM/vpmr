@@ -44,10 +44,9 @@ add_executable(vpmr src/VPMR.cpp)
 
 find_package(Python3 COMPONENTS Development Interpreter)
 if (Python3_FOUND)
-    set(_pybind11_findpython_default OFF)
+    add_subdirectory(pybind11)
     message(STATUS "Python3: ${Python3_VERSION}")
     include_directories(${Python3_INCLUDE_DIRS})
-    add_subdirectory(pybind11)
 
     pybind11_add_module(_pyvpmr src/VPMR.cpp)
     target_compile_definitions(_pyvpmr PRIVATE PYVPMR)
