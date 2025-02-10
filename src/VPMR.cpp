@@ -446,8 +446,7 @@ PYBIND11_MODULE(_pyvpmr, m) {
     m.doc() = "The VPMR Algorithm";
 
     m.def(
-        "vpmr", &vpmr_wrapper, pybind11::call_guard<pybind11::gil_scoped_release>(),
-        pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("c") = 4, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 1.5, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "",
+        "vpmr", &vpmr_wrapper,
         "The VPMR Algorithm.\n\n"
         ":param n: number of terms (default: 10)\n"
         ":param c: maximum exponent (default: 4)\n"
@@ -456,6 +455,8 @@ PYBIND11_MODULE(_pyvpmr, m) {
         ":param m: precision multiplier (default: 1.5)\n"
         ":param e: tolerance (default: 1E-8)\n"
         ":param k: kernel function (default: exp(-t^2/4))\n"
-        ":return: M, S\n");
+        ":return: M, S\n",
+        pybind11::call_guard<pybind11::gil_scoped_release>(),
+        pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("c") = 4, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 1.5, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "");
 }
 #endif
