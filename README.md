@@ -239,10 +239,8 @@ WSL.
 # install necessary packages
 pacman -S git mingw-w64-x86_64-cmake mingw-w64-x86_64-tbb mingw-w64-x86_64-gcc mingw-w64-x86_64-ninja mingw-w64-x86_64-gmp mingw-w64-x86_64-mpfr
 # clone the repository
-git clone --depth 1 https://github.com/TLCFEM/vpmr.git
-# initialise submodules
+git clone --recurse-submodules --depth 1 https://github.com/TLCFEM/vpmr.git
 cd vpmr
-git submodule update --init --recursive
 # apply patch to enable parallel evaluation of some loops in SVD
 cd eigen && git apply --ignore-space-change --ignore-whitespace ../patch_size.patch && cd ..
 # configure and compile
@@ -257,9 +255,8 @@ The following is based on Fedora.
 ```bash
 sudo dnf install gcc g++ gfortran cmake git -y
 sudo dnf install tbb-devel mpfr-devel gmp-devel -y
-git clone --depth 1 https://github.com/TLCFEM/vpmr.git
+git clone --recurse-submodules --depth 1 https://github.com/TLCFEM/vpmr.git
 cd vpmr
-git submodule update --init --recursive
 cd eigen && git apply --ignore-space-change --ignore-whitespace ../patch_size.patch && cd ..
 cmake -DCMAKE_BUILD_TYPE=Release .
 make

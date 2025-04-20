@@ -11,9 +11,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
       - name: Setup
         run: |
-          git submodule update --init --recursive
           cd eigen && git apply ../patch_size.patch && cd ..
       - name: Build
         run: pipx run build --sdist
@@ -48,9 +50,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
       - name: Setup
         run: |
-          git submodule update --init --recursive
           cd eigen && git apply ../patch_size.patch && cd ..
       - name: CI Build Wheel macos-14
         if: matrix.os == 'macos-14'
