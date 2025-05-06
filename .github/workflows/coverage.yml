@@ -38,4 +38,4 @@ jobs:
       - name: Upload
         uses: codecov/codecov-action@v5
         with:
-          plugins: pycoverage
+          plugins: gcov
