@@ -15,29 +15,179 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 
-#include "VPMR.h"
+#include <gmpxx.h>
+#include <iomanip>
 #include <mpfr/exprtk_mpfr_adaptor.hpp>
-#include <mutex>
+#include <numeric>
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/parallel_for.h>
-#include "BigInt.hpp"
-#include "Cache.hpp"
+#include <tbb/parallel_reduce.h>
 #include "Eigen/Core"
 #include "Eigen/MatrixFunctions"
-#include "Gauss.hpp"
 #ifdef HAVE_WINDOWS_H
 #include <Windows.h>
 #endif
 
+using namespace mpfr;
+
+struct Config {
+    bool print_weight = false;
+    bool print_singular_value = false;
+    bool omit_trivial_terms = true;
+    int max_terms = 10;
+    int max_exponent = 4;
+    int precision_bits = 512;
+    int quadrature_order = 500;
+    double precision_multiplier = 1.5;
+    mpreal tolerance{"1E-8", precision_bits};
+    std::string kernel = "exp(-t*t/4)";
+
+    void print() const {
+        std::cout << std::scientific << std::setprecision(4);
+
+        std::cout << "Using the following parameters:\n";
+        std::cout << "       terms = " << max_terms << ".\n";
+        std::cout << "    exponent = " << max_exponent << ".\n";
+        std::cout << "   precision = " << precision_bits << ".\n";
+        std::cout << " quad. order = " << quadrature_order << ".\n";
+        std::cout << "  multiplier = " << precision_multiplier << ".\n";
+        std::cout << "   tolerance = " << (2 * tolerance).toDouble() << ".\n";
+        std::cout << "      kernel = " << kernel << ".\n\n";
+    }
+};
+
 Config config;
 
-BigInt comb_impl(unsigned, unsigned);
+mpreal MP_PI = const_pi();
+mpreal MP_PI_HALF{MP_PI / 2};
+
+class Quadrature {
+    class LegendrePolynomial {
+        class Evaluation {
+            const mpreal ONE = mpreal(1, config.precision_bits);
+            const mpreal TWO = mpreal(2, config.precision_bits);
+
+            const size_t degree;
+
+            mpreal _x, _v, _d;
+
+        public:
+            explicit Evaluation(const mpreal& X, const size_t D)
+                : degree(D)
+                , _x(X)
+                , _v(1, config.precision_bits)
+                , _d(0, config.precision_bits) { this->evaluate(X); }
+
+            void evaluate(const mpreal& x) {
+                this->_x = x;
+
+                mpreal left{x}, right{1, config.precision_bits};
+
+                for(size_t i = 2; i <= degree; ++i) {
+                    this->_v = ((TWO * i - ONE) * x * left - (i - ONE) * right) / i;
+
+                    right = left;
+                    left = this->_v;
+                }
+
+                this->_d = degree / (x * x - ONE) * (x * this->_v - right);
+            }
+
+            [[nodiscard]] mpreal v() const { return this->_v; }
+            [[nodiscard]] mpreal d() const { return this->_d; }
+            [[nodiscard]] mpreal x() const { return this->_x; }
+        };
+
+        static tbb::affinity_partitioner ap;
+
+        const mpreal ONE = mpreal(1, config.precision_bits);
+        const mpreal TWO = mpreal(2, config.precision_bits);
+
+    public:
+        const size_t degree;
+
+    private:
+        std::unique_ptr<mpreal[]> _r, _w;
+
+    public:
+        explicit LegendrePolynomial(const size_t D)
+            : degree(D > 2 ? D : 2)
+            , _r(std::make_unique<mpreal[]>(degree))
+            , _w(std::make_unique<mpreal[]>(degree)) {
+            tbb::parallel_for(static_cast<size_t>(0), degree / 2 + 1, [&](const size_t i) {
+            mpreal dr{1, config.precision_bits};
+
+            Evaluation eval(cos(MP_PI * mpreal(4 * i + 3, config.precision_bits) / mpreal(4 * degree + 2, config.precision_bits)), degree);
+            do {
+                dr = eval.v() / eval.d();
+                eval.evaluate(eval.x() - dr);
+            }
+            while(abs(dr) > std::numeric_limits<mpreal>::epsilon());
+
+            this->_r[i] = eval.x();
+            this->_w[i] = TWO / ((ONE - eval.x() * eval.x()) * eval.d() * eval.d()); }, ap);
+
+            tbb::parallel_for(degree / 2, degree, [&](const size_t i) {
+            this->_r[i] = -this->_r[degree - i - 1];
+            this->_w[i] = this->_w[degree - i - 1]; }, ap);
+        }
+
+        [[nodiscard]] mpreal root(const int i) const { return this->_r[i]; }
+        [[nodiscard]] mpreal weight(const int i) const { return this->_w[i]; }
+    };
+
+    LegendrePolynomial poly;
+
+public:
+    explicit Quadrature(const size_t D)
+        : poly(D) {}
+
+    template<typename Function> mpreal integrate(Function&& f) const {
+        // mpreal sum{0, config.precision_bits};
+        // for (int i = 0; i < int(poly.degree); ++i)
+        //     sum += poly.weight(i) * f(i, poly.root(i));
+        // return sum;
+        return tbb::parallel_deterministic_reduce(
+            tbb::blocked_range(0, static_cast<int>(poly.degree)), mpreal(0, config.precision_bits),
+            [&](const tbb::blocked_range<int>& r, mpreal running_total) {
+                for(auto i = r.begin(); i < r.end(); ++i) running_total += poly.weight(i) * f(i, MP_PI_HALF * poly.root(i) + MP_PI_HALF);
+                return running_total;
+            },
+            std::plus<>());
+    }
+};
+
+tbb::affinity_partitioner Quadrature::LegendrePolynomial::ap{};
+
+template<typename R, typename... A> class Cache {
+public:
+    Cache() = default;
+
+    explicit Cache(std::function<R(A...)> f)
+        : f_(std::move(f)) {}
+
+    R operator()(A... a) {
+        std::tuple<A...> key(a...);
+        if(auto search = map_.find(key); search != map_.end()) return search->second;
+        auto result = f_(a...);
+        map_[key] = result;
+        return result;
+    }
+
+private:
+    std::function<R(A...)> f_;
+    std::map<std::tuple<A...>, R> map_;
+};
+
+using big_int = mpz_class;
+
+big_int comb_impl(unsigned, unsigned);
 
 // cached function for combinatorial number calculation
-Cache<BigInt, unsigned, unsigned> comb(comb_impl);
+Cache<big_int, unsigned, unsigned> comb(comb_impl);
 
 // recursive implementation of combinatorial number calculation
-BigInt comb_impl(unsigned n, unsigned k) {
+big_int comb_impl(unsigned n, unsigned k) {
     if(k == 0 || k == n) return {1};
     if(k == 1 || k == n - 1) return {n};
     if(k > n) return {0};
@@ -196,15 +346,15 @@ mpreal weight(const Quadrature& quad, const int j) {
     if(j > N) {
         for(auto l = j - N; l < N; ++l)
             result += sgn_bit(N + l - j) * mpreal((N - l) * (N + l), D) / mpreal(N * (N + l + j), D) *
-                mpreal(comb(N + l + j, N + l - j).to_string(), D) * k_hat(N + l);
+                mpreal(comb(N + l + j, N + l - j).get_str(), D) * k_hat(N + l);
     }
     else {
         for(auto l = j; l <= N; ++l)
             result += sgn_bit(l - j) * mpreal(l, D) / mpreal(l + j, D) *
-                mpreal(comb(l + j, l - j).to_string(), D) * k_hat(l);
+                mpreal(comb(l + j, l - j).get_str(), D) * k_hat(l);
         for(auto l = 1; l < N; ++l)
             result += sgn_bit(N + l - j) * mpreal((N - l) * (N + l), D) / mpreal(N * (N + l + j), D) *
-                mpreal(comb(N + l + j, N + l - j).to_string(), D) * k_hat(N + l);
+                mpreal(comb(N + l + j, N + l - j).get_str(), D) * k_hat(N + l);
     }
 
     // unlike the original paper, we do not multiply 4^j here
@@ -214,7 +364,7 @@ mpreal weight(const Quadrature& quad, const int j) {
 
 std::vector<long> sort_index(const cx_vec& v) {
     std::vector<long> idx(v.size());
-    iota(idx.begin(), idx.end(), 0);
+    std::iota(idx.begin(), idx.end(), 0);
 
     std::stable_sort(idx.begin(), idx.end(), [&v](const long i, const long j) {
         const auto value_i = norm(v(i)).toDouble(), value_j = norm(v(j)).toDouble();
@@ -252,11 +402,12 @@ std::tuple<cx_vec, cx_vec> vpmr() {
     auto [M, S] = model_reduction(A, B, C);
 
     auto ID = sort_index(M);
-    for(int I = static_cast<int>(ID.size()) - 1; I >= 0; --I)
-        if(norm(M(ID[I])) < config.tolerance)
-            ID.erase(ID.begin() + I);
-        else
-            break;
+    if(config.omit_trivial_terms)
+        for(int I = static_cast<int>(ID.size()) - 1; I >= 0; --I)
+            if(norm(M(ID[I])) > config.tolerance) {
+                ID.erase(ID.begin() + I + 1, ID.end());
+                break;
+            }
 
     std::cout << "[6/6] Done.\n\n";
 
@@ -339,7 +490,7 @@ int main(const int argc, const char** argv) {
     }
 
     // check size
-    BigInt comb_max = comb(4 * config.max_terms, 2 * config.max_terms);
+    big_int comb_max = comb(4 * config.max_terms, 2 * config.max_terms);
     int comb_digit = 1;
     while((comb_max /= 2) > 0) ++comb_digit;
     comb_digit = std::max(64, static_cast<int>(std::max(1.5, config.precision_multiplier) * static_cast<double>(comb_digit + 4 * config.max_terms)));
@@ -405,7 +556,7 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
     if(!k.empty()) config.kernel = k;
 
     // check size
-    BigInt comb_max = comb(4 * config.max_terms, 2 * config.max_terms);
+    big_int comb_max = comb(4 * config.max_terms, 2 * config.max_terms);
     int comb_digit = 1;
     while((comb_max /= 2) > 0) ++comb_digit;
     comb_digit = std::max(64, static_cast<int>(std::max(1.5, config.precision_multiplier) * static_cast<double>(comb_digit + 4 * config.max_terms)));

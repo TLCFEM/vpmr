@@ -42,10 +42,9 @@ The following libraries are required:
 The following libraries are included:
 
 1. [mpreal](http://www.holoborodko.com/pavel/mpfr/) `mpreal` type C++ wrapper, included
-2. [BigInt](https://github.com/faheel/BigInt) `BigInt` arbitrary large integer for combinatorial number, included
-3. [Eigen](https://eigen.tuxfamily.org/) for matrix decomposition, included
-4. [exprtk](https://github.com/ArashPartow/exprtk.git) for expression parsing, included
-5. [exprtk-custom-types](https://github.com/ArashPartow/exprtk-custom-types.git) for `mpreal` support, included
+2. [Eigen](https://eigen.tuxfamily.org/) for matrix decomposition, included
+3. [exprtk](https://github.com/ArashPartow/exprtk.git) for expression parsing, included
+4. [exprtk-custom-types](https://github.com/ArashPartow/exprtk-custom-types.git) for `mpreal` support, included
 
 ## How To
 
@@ -268,15 +267,15 @@ The binary requires available `gmp`, `mpfr` and `tbb` libraries.
 
 ```bash
 ❯ ldd vpmr
-     linux-vdso.so.1 (0x00007ffcf3121000)
-     libgmp.so.10 => /lib64/libgmp.so.10 (0x00007f72087e8000)
-     libmpfr.so.6 => /lib64/libmpfr.so.6 (0x00007f7208736000)
-     libtbb.so.2 => /lib64/libtbb.so.2 (0x00007f72086f2000)
-     libstdc++.so.6 => /lib64/libstdc++.so.6 (0x00007f7208400000)
-     libm.so.6 => /lib64/libm.so.6 (0x00007f7208320000)
-     libgcc_s.so.1 => /lib64/libgcc_s.so.1 (0x00007f72086d0000)
-     libc.so.6 => /lib64/libc.so.6 (0x00007f7208143000)
-     /lib64/ld-linux-x86-64.so.2 (0x00007f72088a1000)
+    linux-vdso.so.1 (0x00007ffec2fa0000)
+    libtbb.so.12 => /lib/x86_64-linux-gnu/libtbb.so.12 (0x00007fd1dcb13000)
+    libgmp.so.10 => /lib/x86_64-linux-gnu/libgmp.so.10 (0x00007fd1dca92000)
+    libmpfr.so.6 => /lib/x86_64-linux-gnu/libmpfr.so.6 (0x00007fd1dc9d8000)
+    libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fd1dac00000)
+    libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fd1daf20000)
+    libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fd1daf00000)
+    libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fd1daa1f000)
+    /lib64/ld-linux-x86-64.so.2 (0x00007fd1dcb78000)
 ```
 
 The distributed `appimage` is portable.
