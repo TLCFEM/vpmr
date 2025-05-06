@@ -18,6 +18,7 @@
 #include <gmpxx.h>
 #include <iomanip>
 #include <mpfr/exprtk_mpfr_adaptor.hpp>
+#include <mutex>
 #include <numeric>
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/parallel_for.h>
