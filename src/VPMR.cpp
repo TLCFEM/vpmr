@@ -478,6 +478,8 @@ int main(const int argc, const char** argv) {
             while(std::getline(file, line)) config.kernel += line;
             file.close();
         }
+        else if(token == "--no-omit")
+            config.omit_trivial_terms = false;
         else if(token == "-w" || token == "--weights")
             config.print_weight = true;
         else if(token == "-s" || token == "--singular-values")
