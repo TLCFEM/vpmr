@@ -1,5 +1,62 @@
+diff --git a/Eigen/src/Core/products/GeneralMatrixVector.h b/Eigen/src/Core/products/GeneralMatrixVector.h
+index ba72a8a4f..51775ba5f 100644
+--- a/Eigen/src/Core/products/GeneralMatrixVector.h
++++ b/Eigen/src/Core/products/GeneralMatrixVector.h
+@@ -13,6 +13,8 @@
+ // IWYU pragma: private
+ #include "../InternalHeaderCheck.h"
+ 
++#include <tbb/parallel_reduce.h>
++
+ namespace Eigen {
+ 
+ namespace internal {
+@@ -150,30 +152,20 @@ general_matrix_vector_product<Index, LhsScalar, LhsMapper, ColMajor, ConjugateLh
+     Index jend = numext::mini(j2 + block_cols, cols);
+     Index i = 0;
+     for (; i < n8; i += ResPacketSize * 8) {
+-      ResPacket c0 = pset1<ResPacket>(ResScalar(0)), c1 = pset1<ResPacket>(ResScalar(0)),
+-                c2 = pset1<ResPacket>(ResScalar(0)), c3 = pset1<ResPacket>(ResScalar(0)),
+-                c4 = pset1<ResPacket>(ResScalar(0)), c5 = pset1<ResPacket>(ResScalar(0)),
+-                c6 = pset1<ResPacket>(ResScalar(0)), c7 = pset1<ResPacket>(ResScalar(0));
+-
+-      for (Index j = j2; j < jend; j += 1) {
+-        RhsPacket b0 = pset1<RhsPacket>(rhs(j, 0));
+-        c0 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 0, j), b0, c0);
+-        c1 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 1, j), b0, c1);
+-        c2 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 2, j), b0, c2);
+-        c3 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 3, j), b0, c3);
+-        c4 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 4, j), b0, c4);
+-        c5 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 5, j), b0, c5);
+-        c6 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 6, j), b0, c6);
+-        c7 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 7, j), b0, c7);
++      for (auto x = 0; x < 8; ++x) {
++        const auto offset = i + ResPacketSize * x;
++        pstoreu(res + offset, pmadd(tbb::parallel_deterministic_reduce(
++                                        tbb::blocked_range<Index>(j2, jend), pset1<ResPacket>(ResScalar(0)),
++                                        [&](const tbb::blocked_range<Index>& r, ResPacket running_total) {
++                                          for (auto j = r.begin(); j < r.end(); ++j)
++                                            running_total += pcj.pmul(
++                                                lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * x, j),
++                                                pset1<RhsPacket>(rhs(j, 0)));
++                                          return running_total;
++                                        },
++                                        std::plus<>()),
++                                    palpha, ploadu<ResPacket>(res + offset)));
+       }
+-      pstoreu(res + i + ResPacketSize * 0, pmadd(c0, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 0)));
+-      pstoreu(res + i + ResPacketSize * 1, pmadd(c1, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 1)));
+-      pstoreu(res + i + ResPacketSize * 2, pmadd(c2, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 2)));
+-      pstoreu(res + i + ResPacketSize * 3, pmadd(c3, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 3)));
+-      pstoreu(res + i + ResPacketSize * 4, pmadd(c4, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 4)));
+-      pstoreu(res + i + ResPacketSize * 5, pmadd(c5, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 5)));
+-      pstoreu(res + i + ResPacketSize * 6, pmadd(c6, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 6)));
+-      pstoreu(res + i + ResPacketSize * 7, pmadd(c7, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 7)));
+     }
+     if (i < n4) {
+       ResPacket c0 = pset1<ResPacket>(ResScalar(0)), c1 = pset1<ResPacket>(ResScalar(0)),
 diff --git a/Eigen/src/SVD/BDCSVD.h b/Eigen/src/SVD/BDCSVD.h
-index 6b85d1d5a..f7d023c7a 100644
+index 6fab905e5..5df767bf1 100644
 --- a/Eigen/src/SVD/BDCSVD.h
 +++ b/Eigen/src/SVD/BDCSVD.h
 @@ -30,6 +30,10 @@
@@ -13,7 +70,7 @@ index 6b85d1d5a..f7d023c7a 100644
  #ifdef EIGEN_BDCSVD_DEBUG_VERBOSE
  #include <iostream>
  #endif
-@@ -805,6 +809,16 @@ template <typename MatrixType, int Options>
+@@ -820,6 +824,16 @@ template <typename MatrixType, int Options>
  typename BDCSVD<MatrixType, Options>::RealScalar BDCSVD<MatrixType, Options>::secularEq(
      RealScalar mu, const ArrayRef& col0, const ArrayRef& diag, const IndicesRef& perm, const ArrayRef& diagShifted,
      RealScalar shift) {
@@ -30,7 +87,7 @@ index 6b85d1d5a..f7d023c7a 100644
    Index m = perm.size();
    RealScalar res = Literal(1);
    for (Index i = 0; i < m; ++i) {
-@@ -1155,10 +1169,13 @@ void BDCSVD<MatrixType, Options>::computeSingVecs(const ArrayRef& zhat, const Ar
+@@ -1170,10 +1184,13 @@ void BDCSVD<MatrixType, Options>::computeSingVecs(const ArrayRef& zhat, const Ar
        if (m_compV) V.col(k) = VectorType::Unit(n, k);
      } else {
        U.col(k).setZero();
