@@ -1,3 +1,20 @@
+diff --git a/Eigen/src/Core/AssignEvaluator.h b/Eigen/src/Core/AssignEvaluator.h
+index 36f0a9d74..13b31110c 100644
+--- a/Eigen/src/Core/AssignEvaluator.h
++++ b/Eigen/src/Core/AssignEvaluator.h
+@@ -558,10 +558,11 @@ struct dense_assignment_loop_impl<Kernel, InnerVectorizedTraversal, InnerUnrolli
+ /***********************
+ *** Linear traversal ***
+ ***********************/
+-
++static tbb::affinity_partitioner ap;
+ template <typename Kernel>
+ struct dense_assignment_loop_impl<Kernel, LinearTraversal, NoUnrolling> {
+   EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE constexpr void run(Kernel& kernel) {
++    return tbb::parallel_for(Index(0), kernel.size(), [&](const Index l) { kernel.assignCoeff(l); }, ap);
+     const Index size = kernel.size();
+     for (Index i = 0; i < size; ++i) kernel.assignCoeff(i);
+   }
 diff --git a/Eigen/src/Core/products/GeneralMatrixVector.h b/Eigen/src/Core/products/GeneralMatrixVector.h
 index ba72a8a4f..51775ba5f 100644
 --- a/Eigen/src/Core/products/GeneralMatrixVector.h
@@ -56,21 +73,19 @@ index ba72a8a4f..51775ba5f 100644
      if (i < n4) {
        ResPacket c0 = pset1<ResPacket>(ResScalar(0)), c1 = pset1<ResPacket>(ResScalar(0)),
 diff --git a/Eigen/src/SVD/BDCSVD.h b/Eigen/src/SVD/BDCSVD.h
-index 6fab905e5..5df767bf1 100644
+index 6fab905e5..98fd68cdb 100644
 --- a/Eigen/src/SVD/BDCSVD.h
 +++ b/Eigen/src/SVD/BDCSVD.h
-@@ -30,6 +30,10 @@
+@@ -30,6 +30,8 @@
  // IWYU pragma: private
  #include "./InternalHeaderCheck.h"
  
 +#include <tbb/parallel_reduce.h>
 +
-+static tbb::affinity_partitioner ap;
-+
  #ifdef EIGEN_BDCSVD_DEBUG_VERBOSE
  #include <iostream>
  #endif
-@@ -820,6 +824,16 @@ template <typename MatrixType, int Options>
+@@ -820,6 +822,16 @@ template <typename MatrixType, int Options>
  typename BDCSVD<MatrixType, Options>::RealScalar BDCSVD<MatrixType, Options>::secularEq(
      RealScalar mu, const ArrayRef& col0, const ArrayRef& diag, const IndicesRef& perm, const ArrayRef& diagShifted,
      RealScalar shift) {
@@ -87,6 +102,15 @@ index 6fab905e5..5df767bf1 100644
    Index m = perm.size();
    RealScalar res = Literal(1);
    for (Index i = 0; i < m; ++i) {
+@@ -1161,6 +1173,8 @@ template <typename MatrixType, int Options>
+ void BDCSVD<MatrixType, Options>::computeSingVecs(const ArrayRef& zhat, const ArrayRef& diag, const IndicesRef& perm,
+                                                   const VectorType& singVals, const ArrayRef& shifts,
+                                                   const ArrayRef& mus, MatrixXr& U, MatrixXr& V) {
++  static tbb::affinity_partitioner ap;
++
+   Index n = zhat.size();
+   Index m = perm.size();
+ 
 @@ -1170,10 +1184,13 @@ void BDCSVD<MatrixType, Options>::computeSingVecs(const ArrayRef& zhat, const Ar
        if (m_compV) V.col(k) = VectorType::Unit(n, k);
      } else {
