@@ -15,20 +15,53 @@ index 36f0a9d74..13b31110c 100644
      const Index size = kernel.size();
      for (Index i = 0; i < size; ++i) kernel.assignCoeff(i);
    }
+diff --git a/Eigen/src/Core/products/GeneralBlockPanelKernel.h b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
+index e72c6b48e..a72e7e53e 100644
+--- a/Eigen/src/Core/products/GeneralBlockPanelKernel.h
++++ b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
+@@ -1466,7 +1466,8 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+     const Index actual_panel_rows =
+         (3 * LhsProgress) * std::max<Index>(1, ((l1 - sizeof(ResScalar) * mr * nr - depth * nr * sizeof(RhsScalar)) /
+                                                 (depth * sizeof(LhsScalar) * 3 * LhsProgress)));
+-    for (Index i1 = 0; i1 < peeled_mc3; i1 += actual_panel_rows) {
++    tbb::parallel_for(Index(0), (peeled_mc3 + actual_panel_rows - 1) / actual_panel_rows, [&](Index i1) {
++      i1 *= actual_panel_rows;
+       const Index actual_panel_end = (std::min)(i1 + actual_panel_rows, peeled_mc3);
+ #if EIGEN_ARCH_ARM64 || EIGEN_ARCH_LOONGARCH64
+       EIGEN_IF_CONSTEXPR(nr >= 8) {
+@@ -1921,7 +1922,7 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+           r0.storePacket(2 * Traits::ResPacketSize, R2);
+         }
+       }
+-    }
++    });
+   }
+ 
+   //---------- Process 2 * LhsProgress rows at once ----------
+@@ -1934,7 +1935,8 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+         (2 * LhsProgress) * std::max<Index>(1, ((l1 - sizeof(ResScalar) * mr * nr - depth * nr * sizeof(RhsScalar)) /
+                                                 (depth * sizeof(LhsScalar) * 2 * LhsProgress)));
+ 
+-    for (Index i1 = peeled_mc3; i1 < peeled_mc2; i1 += actual_panel_rows) {
++    tbb::parallel_for(peeled_mc3, (peeled_mc2 + actual_panel_rows - 1) / actual_panel_rows, [&](Index i1) {
++      i1 *= actual_panel_rows;
+       Index actual_panel_end = (std::min)(i1 + actual_panel_rows, peeled_mc2);
+ #if EIGEN_ARCH_ARM64 || EIGEN_ARCH_LOONGARCH64
+       EIGEN_IF_CONSTEXPR(nr >= 8) {
+@@ -2298,7 +2300,7 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+           r0.storePacket(1 * Traits::ResPacketSize, R1);
+         }
+       }
+-    }
++    });
+   }
+   //---------- Process 1 * LhsProgress rows at once ----------
+   if (mr >= 1 * Traits::LhsProgress) {
 diff --git a/Eigen/src/Core/products/GeneralMatrixVector.h b/Eigen/src/Core/products/GeneralMatrixVector.h
-index ba72a8a4f..51775ba5f 100644
+index ba72a8a4f..4ce9f99ab 100644
 --- a/Eigen/src/Core/products/GeneralMatrixVector.h
 +++ b/Eigen/src/Core/products/GeneralMatrixVector.h
-@@ -13,6 +13,8 @@
- // IWYU pragma: private
- #include "../InternalHeaderCheck.h"
- 
-+#include <tbb/parallel_reduce.h>
-+
- namespace Eigen {
- 
- namespace internal {
-@@ -150,30 +152,20 @@ general_matrix_vector_product<Index, LhsScalar, LhsMapper, ColMajor, ConjugateLh
+@@ -150,30 +150,20 @@ general_matrix_vector_product<Index, LhsScalar, LhsMapper, ColMajor, ConjugateLh
      Index jend = numext::mini(j2 + block_cols, cols);
      Index i = 0;
      for (; i < n8; i += ResPacketSize * 8) {
@@ -73,19 +106,10 @@ index ba72a8a4f..51775ba5f 100644
      if (i < n4) {
        ResPacket c0 = pset1<ResPacket>(ResScalar(0)), c1 = pset1<ResPacket>(ResScalar(0)),
 diff --git a/Eigen/src/SVD/BDCSVD.h b/Eigen/src/SVD/BDCSVD.h
-index 6fab905e5..98fd68cdb 100644
+index 6fab905e5..6e254b19d 100644
 --- a/Eigen/src/SVD/BDCSVD.h
 +++ b/Eigen/src/SVD/BDCSVD.h
-@@ -30,6 +30,8 @@
- // IWYU pragma: private
- #include "./InternalHeaderCheck.h"
- 
-+#include <tbb/parallel_reduce.h>
-+
- #ifdef EIGEN_BDCSVD_DEBUG_VERBOSE
- #include <iostream>
- #endif
-@@ -820,6 +822,16 @@ template <typename MatrixType, int Options>
+@@ -820,6 +820,16 @@ template <typename MatrixType, int Options>
  typename BDCSVD<MatrixType, Options>::RealScalar BDCSVD<MatrixType, Options>::secularEq(
      RealScalar mu, const ArrayRef& col0, const ArrayRef& diag, const IndicesRef& perm, const ArrayRef& diagShifted,
      RealScalar shift) {
@@ -102,7 +126,7 @@ index 6fab905e5..98fd68cdb 100644
    Index m = perm.size();
    RealScalar res = Literal(1);
    for (Index i = 0; i < m; ++i) {
-@@ -1161,6 +1173,8 @@ template <typename MatrixType, int Options>
+@@ -1161,6 +1171,8 @@ template <typename MatrixType, int Options>
  void BDCSVD<MatrixType, Options>::computeSingVecs(const ArrayRef& zhat, const ArrayRef& diag, const IndicesRef& perm,
                                                    const VectorType& singVals, const ArrayRef& shifts,
                                                    const ArrayRef& mus, MatrixXr& U, MatrixXr& V) {
@@ -111,7 +135,7 @@ index 6fab905e5..98fd68cdb 100644
    Index n = zhat.size();
    Index m = perm.size();
  
-@@ -1170,10 +1184,13 @@ void BDCSVD<MatrixType, Options>::computeSingVecs(const ArrayRef& zhat, const Ar
+@@ -1170,10 +1182,13 @@ void BDCSVD<MatrixType, Options>::computeSingVecs(const ArrayRef& zhat, const Ar
        if (m_compV) V.col(k) = VectorType::Unit(n, k);
      } else {
        U.col(k).setZero();
