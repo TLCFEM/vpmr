@@ -25,8 +25,8 @@ jobs:
         uses: Chizkiyahu/delete-untagged-ghcr-action@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          package_name: vmpr
-          untagged_only: false
+          package_name: vpmr
+          untagged_only: true
           owner_type: 'user'
       - name: QEMU
         uses: docker/setup-qemu-action@v3
