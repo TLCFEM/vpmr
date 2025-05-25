@@ -41,4 +41,4 @@ jobs:
           push: true
           tags: |
             tlcfem/vpmr:latest
-            ghcr.io/tlcfem/vmpr:latest
+            ghcr.io/tlcfem/vpmr:latest
