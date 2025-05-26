@@ -1,20 +1,3 @@
-diff --git a/Eigen/src/Core/AssignEvaluator.h b/Eigen/src/Core/AssignEvaluator.h
-index 36f0a9d74..13b31110c 100644
---- a/Eigen/src/Core/AssignEvaluator.h
-+++ b/Eigen/src/Core/AssignEvaluator.h
-@@ -558,10 +558,11 @@ struct dense_assignment_loop_impl<Kernel, InnerVectorizedTraversal, InnerUnrolli
- /***********************
- *** Linear traversal ***
- ***********************/
--
-+static tbb::affinity_partitioner ap;
- template <typename Kernel>
- struct dense_assignment_loop_impl<Kernel, LinearTraversal, NoUnrolling> {
-   EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE constexpr void run(Kernel& kernel) {
-+    return tbb::parallel_for(Index(0), kernel.size(), [&](const Index l) { kernel.assignCoeff(l); }, ap);
-     const Index size = kernel.size();
-     for (Index i = 0; i < size; ++i) kernel.assignCoeff(i);
-   }
 diff --git a/Eigen/src/Core/products/GeneralBlockPanelKernel.h b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
 index e72c6b48e..a72e7e53e 100644
 --- a/Eigen/src/Core/products/GeneralBlockPanelKernel.h
@@ -58,13 +41,14 @@ index e72c6b48e..a72e7e53e 100644
    //---------- Process 1 * LhsProgress rows at once ----------
    if (mr >= 1 * Traits::LhsProgress) {
 diff --git a/Eigen/src/Core/products/GeneralMatrixVector.h b/Eigen/src/Core/products/GeneralMatrixVector.h
-index ba72a8a4f..4ce9f99ab 100644
+index ba72a8a4f..d70705048 100644
 --- a/Eigen/src/Core/products/GeneralMatrixVector.h
 +++ b/Eigen/src/Core/products/GeneralMatrixVector.h
-@@ -150,30 +150,20 @@ general_matrix_vector_product<Index, LhsScalar, LhsMapper, ColMajor, ConjugateLh
+@@ -149,32 +149,21 @@ general_matrix_vector_product<Index, LhsScalar, LhsMapper, ColMajor, ConjugateLh
+   for (Index j2 = 0; j2 < cols; j2 += block_cols) {
      Index jend = numext::mini(j2 + block_cols, cols);
      Index i = 0;
-     for (; i < n8; i += ResPacketSize * 8) {
+-    for (; i < n8; i += ResPacketSize * 8) {
 -      ResPacket c0 = pset1<ResPacket>(ResScalar(0)), c1 = pset1<ResPacket>(ResScalar(0)),
 -                c2 = pset1<ResPacket>(ResScalar(0)), c3 = pset1<ResPacket>(ResScalar(0)),
 -                c4 = pset1<ResPacket>(ResScalar(0)), c5 = pset1<ResPacket>(ResScalar(0)),
@@ -80,6 +64,7 @@ index ba72a8a4f..4ce9f99ab 100644
 -        c5 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 5, j), b0, c5);
 -        c6 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 6, j), b0, c6);
 -        c7 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 7, j), b0, c7);
++    for (; i < n8; i += ResPacketSize * 8)
 +      for (auto x = 0; x < 8; ++x) {
 +        const auto offset = i + ResPacketSize * x;
 +        pstoreu(res + offset, pmadd(tbb::parallel_deterministic_reduce(
@@ -102,11 +87,12 @@ index ba72a8a4f..4ce9f99ab 100644
 -      pstoreu(res + i + ResPacketSize * 5, pmadd(c5, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 5)));
 -      pstoreu(res + i + ResPacketSize * 6, pmadd(c6, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 6)));
 -      pstoreu(res + i + ResPacketSize * 7, pmadd(c7, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 7)));
-     }
+-    }
      if (i < n4) {
        ResPacket c0 = pset1<ResPacket>(ResScalar(0)), c1 = pset1<ResPacket>(ResScalar(0)),
+                 c2 = pset1<ResPacket>(ResScalar(0)), c3 = pset1<ResPacket>(ResScalar(0));
 diff --git a/Eigen/src/SVD/BDCSVD.h b/Eigen/src/SVD/BDCSVD.h
-index 6fab905e5..6e254b19d 100644
+index 6fab905e5..9ae75c579 100644
 --- a/Eigen/src/SVD/BDCSVD.h
 +++ b/Eigen/src/SVD/BDCSVD.h
 @@ -820,6 +820,16 @@ template <typename MatrixType, int Options>
@@ -117,7 +103,7 @@ index 6fab905e5..6e254b19d 100644
 +      tbb::blocked_range<Index>(Index(0), perm.size()), RealScalar(1),
 +      [&](const tbb::blocked_range<Index>& r, RealScalar running_total) {
 +        for (auto i = r.begin(); i < r.end(); ++i) {
-+          Index j = perm(i);
++          const Index j = perm(i);
 +          running_total += (col0(j) / (diagShifted(j) - mu)) * (col0(j) / (diag(j) + shift + mu));
 +        }
 +        return running_total;
@@ -146,7 +132,7 @@ index 6fab905e5..6e254b19d 100644
 +      tbb::parallel_for(
 +          Index(0), m,
 +          [&](const Index l) {
-+            Index i = perm(l);
++            const Index i = perm(l);
 +            U(i, k) = zhat(i) / (((diag(i) - shifts(k)) - mus(k))) / ((diag(i) + singVals[k]));
 +          },
 +          ap);
