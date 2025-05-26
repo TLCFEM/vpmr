@@ -41,14 +41,13 @@ index e72c6b48e..a72e7e53e 100644
    //---------- Process 1 * LhsProgress rows at once ----------
    if (mr >= 1 * Traits::LhsProgress) {
 diff --git a/Eigen/src/Core/products/GeneralMatrixVector.h b/Eigen/src/Core/products/GeneralMatrixVector.h
-index ba72a8a4f..d70705048 100644
+index ba72a8a4f..4ce9f99ab 100644
 --- a/Eigen/src/Core/products/GeneralMatrixVector.h
 +++ b/Eigen/src/Core/products/GeneralMatrixVector.h
-@@ -149,32 +149,21 @@ general_matrix_vector_product<Index, LhsScalar, LhsMapper, ColMajor, ConjugateLh
-   for (Index j2 = 0; j2 < cols; j2 += block_cols) {
+@@ -150,30 +150,20 @@ general_matrix_vector_product<Index, LhsScalar, LhsMapper, ColMajor, ConjugateLh
      Index jend = numext::mini(j2 + block_cols, cols);
      Index i = 0;
--    for (; i < n8; i += ResPacketSize * 8) {
+     for (; i < n8; i += ResPacketSize * 8) {
 -      ResPacket c0 = pset1<ResPacket>(ResScalar(0)), c1 = pset1<ResPacket>(ResScalar(0)),
 -                c2 = pset1<ResPacket>(ResScalar(0)), c3 = pset1<ResPacket>(ResScalar(0)),
 -                c4 = pset1<ResPacket>(ResScalar(0)), c5 = pset1<ResPacket>(ResScalar(0)),
@@ -64,7 +63,6 @@ index ba72a8a4f..d70705048 100644
 -        c5 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 5, j), b0, c5);
 -        c6 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 6, j), b0, c6);
 -        c7 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 7, j), b0, c7);
-+    for (; i < n8; i += ResPacketSize * 8)
 +      for (auto x = 0; x < 8; ++x) {
 +        const auto offset = i + ResPacketSize * x;
 +        pstoreu(res + offset, pmadd(tbb::parallel_deterministic_reduce(
@@ -87,10 +85,9 @@ index ba72a8a4f..d70705048 100644
 -      pstoreu(res + i + ResPacketSize * 5, pmadd(c5, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 5)));
 -      pstoreu(res + i + ResPacketSize * 6, pmadd(c6, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 6)));
 -      pstoreu(res + i + ResPacketSize * 7, pmadd(c7, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 7)));
--    }
+     }
      if (i < n4) {
        ResPacket c0 = pset1<ResPacket>(ResScalar(0)), c1 = pset1<ResPacket>(ResScalar(0)),
-                 c2 = pset1<ResPacket>(ResScalar(0)), c3 = pset1<ResPacket>(ResScalar(0));
 diff --git a/Eigen/src/SVD/BDCSVD.h b/Eigen/src/SVD/BDCSVD.h
 index 6fab905e5..9ae75c579 100644
 --- a/Eigen/src/SVD/BDCSVD.h
