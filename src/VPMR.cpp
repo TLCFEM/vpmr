@@ -588,6 +588,8 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
         return {mm, ss};
     }
 
+    config.print();
+
     const auto [M, S] = vpmr();
 
     for(const auto& I : M) mm.emplace_back(I.real().toDouble(), I.imag().toDouble());
