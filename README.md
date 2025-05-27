@@ -199,8 +199,8 @@ echo "exp(-t*t/10)" > kernel.txt
 
 ## Performance
 
-The computation of weights, that involves integrals, and SVD are parallelised.
-A typical profiling would yield something similar to the following.
+The majority of the algorithm is parallelised to extract the maximum performance.
+The following is a typical performance profile on a i7-10750H platform using the `./vpmr -n 80`.
 
 ![profiling](resource/profile.png)
 
