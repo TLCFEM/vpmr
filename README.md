@@ -106,7 +106,7 @@ Options:
     -c, --max-exponent          <int>     maximum exponent (default: 4)
     -d, --precision-bits        <int>     number of precision bits (default: 512)
     -q, --quadrature-order      <int>     quadrature order (default: 500)
-    -m, --precision-multiplier  <float>   precision multiplier (default: 1.5)
+    -m, --precision-multiplier  <float>   precision multiplier (default: 1.05)
     -e, --tolerance             <float>   tolerance (default: 1E-8)
     -k, --kernel                <string>  file name of kernel function (default uses: exp(-t^2/4))
     -s, --singular-values                 print singular values
@@ -135,7 +135,7 @@ Using the following parameters:
     exponent = 4.
    precision = 355.
  quad. order = 500.
-  multiplier = 1.5000e+00.
+  multiplier = 1.0500e+00.
    tolerance = 1.0000e-08.
       kernel = exp(-t*t/4).
 
@@ -147,7 +147,7 @@ Using the following parameters:
 [6/6] Done.
 
 M = 
-+1.1745193571738943e+01+6.4089561283054790e-107j
++1.1745193571738943e+01+6.4196555242161141e-106j
 -5.5143304351134397e+00+5.7204056791636839e+00j
 -5.5143304351134397e+00-5.7204056791636839e+00j
 -1.6161617424833762e-02+2.3459542440459513e+00j
@@ -167,7 +167,7 @@ S =
 +1.7655956664692953e+00-2.7555720406099038e+00j
 +1.7655956664692953e+00+2.7555720406099038e+00j
 
-Running time: 3112 ms.
+Running time: 2044 ms.
 ```
 
 ![exp(-t^2/4)](resource/example.png)

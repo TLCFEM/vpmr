@@ -39,7 +39,7 @@ struct Config {
     int max_exponent = 4;
     int precision_bits = 512;
     int quadrature_order = 500;
-    double precision_multiplier = 1.5;
+    double precision_multiplier = 1.05;
     mpreal tolerance{"1E-8", precision_bits};
     std::string kernel = "exp(-t*t/4)";
 
@@ -432,7 +432,7 @@ int print_helper() {
     std::cout << "    -c, --max-exponent          <int>     maximum exponent (default: 4)\n";
     std::cout << "    -d, --precision-bits        <int>     number of precision bits (default: 512)\n";
     std::cout << "    -q, --quadrature-order      <int>     quadrature order (default: 500)\n";
-    std::cout << "    -m, --precision-multiplier  <float>   precision multiplier (default: 1.5)\n";
+    std::cout << "    -m, --precision-multiplier  <float>   precision multiplier (default: 1.05)\n";
     std::cout << "    -e, --tolerance             <float>   tolerance (default: 1E-8)\n";
     std::cout << "    -k, --kernel                <string>  file name of kernel function (default uses: exp(-t^2/4))\n";
     std::cout << "    -s, --singular-values                 print singular values\n";
@@ -554,7 +554,7 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
     config.max_exponent = std::max(1, c);
     config.precision_bits = std::max(1, d);
     config.quadrature_order = std::max(1, q);
-    config.precision_multiplier = std::max(1.5, m);
+    config.precision_multiplier = std::max(1.05, m);
     config.tolerance = mpreal(e);
     if(!k.empty()) config.kernel = k;
 
@@ -606,11 +606,11 @@ PYBIND11_MODULE(_pyvpmr, m) {
         ":param c: maximum exponent (default: 4)\n"
         ":param d: number of precision bits (default: 512)\n"
         ":param q: quadrature order (default: 500)\n"
-        ":param m: precision multiplier (default: 1.5)\n"
+        ":param m: precision multiplier (default: 1.05)\n"
         ":param e: tolerance (default: 1E-8)\n"
         ":param k: kernel function (default: exp(-t^2/4))\n"
         ":return: M, S\n",
         pybind11::call_guard<pybind11::gil_scoped_release>(),
-        pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("c") = 4, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 1.5, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "");
+        pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("c") = 4, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 1.05, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "");
 }
 #endif
