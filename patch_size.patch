@@ -1,45 +1,26 @@
 diff --git a/Eigen/src/Core/products/GeneralBlockPanelKernel.h b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-index e72c6b48e..a72e7e53e 100644
+index e72c6b48e..4f918cd20 100644
 --- a/Eigen/src/Core/products/GeneralBlockPanelKernel.h
 +++ b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-@@ -1466,7 +1466,8 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
-     const Index actual_panel_rows =
-         (3 * LhsProgress) * std::max<Index>(1, ((l1 - sizeof(ResScalar) * mr * nr - depth * nr * sizeof(RhsScalar)) /
-                                                 (depth * sizeof(LhsScalar) * 3 * LhsProgress)));
--    for (Index i1 = 0; i1 < peeled_mc3; i1 += actual_panel_rows) {
-+    tbb::parallel_for(Index(0), (peeled_mc3 + actual_panel_rows - 1) / actual_panel_rows, [&](Index i1) {
-+      i1 *= actual_panel_rows;
-       const Index actual_panel_end = (std::min)(i1 + actual_panel_rows, peeled_mc3);
- #if EIGEN_ARCH_ARM64 || EIGEN_ARCH_LOONGARCH64
-       EIGEN_IF_CONSTEXPR(nr >= 8) {
-@@ -1921,7 +1922,7 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
-           r0.storePacket(2 * Traits::ResPacketSize, R2);
+@@ -2108,7 +2108,8 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
          }
        }
--    }
-+    });
-   }
- 
-   //---------- Process 2 * LhsProgress rows at once ----------
-@@ -1934,7 +1935,8 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
-         (2 * LhsProgress) * std::max<Index>(1, ((l1 - sizeof(ResScalar) * mr * nr - depth * nr * sizeof(RhsScalar)) /
-                                                 (depth * sizeof(LhsScalar) * 2 * LhsProgress)));
- 
--    for (Index i1 = peeled_mc3; i1 < peeled_mc2; i1 += actual_panel_rows) {
-+    tbb::parallel_for(peeled_mc3, (peeled_mc2 + actual_panel_rows - 1) / actual_panel_rows, [&](Index i1) {
-+      i1 *= actual_panel_rows;
-       Index actual_panel_end = (std::min)(i1 + actual_panel_rows, peeled_mc2);
- #if EIGEN_ARCH_ARM64 || EIGEN_ARCH_LOONGARCH64
-       EIGEN_IF_CONSTEXPR(nr >= 8) {
-@@ -2298,7 +2300,7 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
-           r0.storePacket(1 * Traits::ResPacketSize, R1);
+ #endif
+-      for (Index j2 = packet_cols8; j2 < packet_cols4; j2 += 4) {
++      tbb::parallel_for(packet_cols8 / 4, packet_cols4 / 4, [&](Index j2) {
++        j2 *= 4;
+         for (Index i = i1; i < actual_panel_end; i += 2 * LhsProgress) {
+           // We selected a 2*Traits::LhsProgress x nr micro block of res which is entirely
+           // stored into 2 x nr registers.
+@@ -2227,7 +2228,7 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+           r3.storePacket(0 * Traits::ResPacketSize, R2);
+           r3.storePacket(1 * Traits::ResPacketSize, R3);
          }
-       }
--    }
-+    });
-   }
-   //---------- Process 1 * LhsProgress rows at once ----------
-   if (mr >= 1 * Traits::LhsProgress) {
+-      }
++      });
+ 
+       // Deal with remaining columns of the rhs
+       for (Index j2 = packet_cols4; j2 < cols; j2++) {
 diff --git a/Eigen/src/Core/products/GeneralMatrixVector.h b/Eigen/src/Core/products/GeneralMatrixVector.h
 index ba72a8a4f..4ce9f99ab 100644
 --- a/Eigen/src/Core/products/GeneralMatrixVector.h
