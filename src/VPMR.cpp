@@ -549,13 +549,14 @@ int main(const int argc, const char** argv) {
 #include <pybind11/stl.h>
 
 std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>> vpmr_wrapper(
-    const int n, const int c, const int d, const int q, const double m, const double e, const std::string& k) {
+    const int n, const int c, const int d, const int q, const double m, const double e, const std::string& k, const bool omit) {
     config.max_terms = std::max(1, n);
     config.max_exponent = std::max(1, c);
     config.precision_bits = std::max(1, d);
     config.quadrature_order = std::max(1, q);
     config.precision_multiplier = std::max(1.05, m);
     config.tolerance = mpreal(e);
+    config.omit_trivial_terms = omit;
     if(!k.empty()) config.kernel = k;
 
     // check size
@@ -611,8 +612,9 @@ PYBIND11_MODULE(_pyvpmr, m) {
         ":param m: precision multiplier (default: 1.05)\n"
         ":param e: tolerance (default: 1E-8)\n"
         ":param k: kernel function (default: exp(-t^2/4))\n"
+        ":param omit: omit trivial terms (default: True)\n"
         ":return: M, S\n",
         pybind11::call_guard<pybind11::gil_scoped_release>(),
-        pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("c") = 4, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 1.05, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "");
+        pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("c") = 4, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 1.05, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "", pybind11::arg("omit") = true);
 }
 #endif
