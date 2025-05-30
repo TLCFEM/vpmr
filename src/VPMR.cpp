@@ -254,11 +254,12 @@ mat lyap(const vec& A, mat&& C) {
 }
 
 long pos(const vec& A) {
+    const auto target_tolerance = .1 * config.tolerance;
     auto sum = mpreal(0, config.precision_bits);
     long P = 0;
     for(auto I = A.size() - 1; I >= 0; --I) {
         sum += A(I);
-        if(sum > config.tolerance) {
+        if(sum > target_tolerance) {
             P = I;
             break;
         }
