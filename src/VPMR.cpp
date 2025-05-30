@@ -410,7 +410,7 @@ std::tuple<cx_vec, cx_vec> vpmr() {
                 break;
             }
 
-    std::cout << "[6/6] Done.\n\n";
+    std::cout << "[6/6] Done with " << ID.size() << " final terms.\n\n";
 
     if(abs(W(0)) < config.tolerance) return std::make_tuple(M(ID), -S(ID));
 
