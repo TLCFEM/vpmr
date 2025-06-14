@@ -49,13 +49,16 @@ endif ()
 
 add_executable(vpmr src/VPMR.cpp)
 
-find_package(Python 3 COMPONENTS Development Interpreter)
-if (Python_FOUND)
-    add_subdirectory(pybind11)
-    message(STATUS "Python3: ${Python_VERSION}")
+option(USE_PYTHON3 "Use Python" ON)
+if (USE_PYTHON3)
+    find_package(Python 3 COMPONENTS Development Interpreter)
+    if (Python_FOUND)
+        add_subdirectory(pybind11)
+        message(STATUS "Python3: ${Python_VERSION}")
 
-    pybind11_add_module(_pyvpmr src/VPMR.cpp)
-    target_compile_definitions(_pyvpmr PRIVATE PYVPMR)
+        pybind11_add_module(_pyvpmr src/VPMR.cpp)
+        target_compile_definitions(_pyvpmr PRIVATE PYVPMR)
+    endif ()
 endif ()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

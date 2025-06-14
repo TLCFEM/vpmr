@@ -30,12 +30,12 @@ jobs:
         run: |
           cd eigen && git apply --ignore-space-change --ignore-whitespace ../patch_size.patch && cd ..
           mkdir build && cd build
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_PYTHON3=OFF ..
           cmake --build .
           mkdir release
           ldd vpmr.exe
           cp vpmr.exe release
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_PYTHON3=OFF ..
           cmake --build .
           cp vpmr.exe release/vpmr-dbg.exe
           cp /mingw64/bin/libgcc_s_seh-1.dll release
