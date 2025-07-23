@@ -76,7 +76,7 @@ jobs:
           chmod +x appimage-builder-ubuntu-22.04
 
           ./linuxdeploy-x86_64.AppImage --appimage-extract-and-run --appdir AppDir --executable build/vpmr -i resource/vpmr.svg
-          ./appimage-builder-ubuntu-22.04 --appimage-extract-and-run --recipe AppImageBuilder.yml --skip-tests
+          ./appimage-builder-ubuntu-22.04 --recipe AppImageBuilder.yml --skip-tests
 
           chmod +x vpmr-${{ env.VPMR_VERSION }}-x86_64.AppImage
           ./vpmr-${{ env.VPMR_VERSION }}-x86_64.AppImage --appimage-extract-and-run -h
