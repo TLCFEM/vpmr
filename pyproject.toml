@@ -7,14 +7,18 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-dynamic = ["version", "readme"]
+dynamic = [
+    "version",
+    "readme",
+]
 name = "pyvpmr"
 description = "The VPMR Algorithm"
 requires-python = ">=3.8"
-license = { file = "LICENSE" }
-keywords = ["vpmr", "kernel function"]
-authors = [{ name = "Theodore Chang", email = "tlcfem@gmail.com" }]
-maintainers = [{ name = "Theodore Chang", email = "tlcfem@gmail.com" }]
+keywords = [
+    "vpmr",
+    "kernel function",
+    "convolution",
+]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Education",
@@ -35,10 +39,21 @@ dependencies = [
     "matplotlib",
 ]
 
+[[project.authors]]
+name = "Theodore Chang"
+email = "tlcfem@gmail.com"
+
+[[project.maintainers]]
+name = "Theodore Chang"
+email = "tlcfem@gmail.com"
+
+[project.license]
+file = "LICENSE"
+
 [project.urls]
-"Homepage" = "https://github.com/TLCFEM/vpmr"
+Homepage = "https://github.com/TLCFEM/vpmr"
 "Bug Reports" = "https://github.com/TLCFEM/vpmr/issuess"
-"Source" = "https://github.com/TLCFEM/vpmr"
+Source = "https://github.com/TLCFEM/vpmr"
 
 [tool.cibuildwheel]
 archs = ["auto64"]
