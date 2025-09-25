@@ -46,7 +46,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-24.04, macos-13, macos-14 ]
+        os: [ ubuntu-22.04, ubuntu-22.04-arm, macos-14-large, macos-15-large, macos-14-xlarge, macos-15-xlarge, windows-2022 ]
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -56,19 +56,8 @@ jobs:
       - name: Setup
         run: |
           cd eigen && git apply ../patch_size.patch && cd ..
-      - name: CI Build Wheel macos-14
-        if: matrix.os == 'macos-14'
-        uses: pypa/cibuildwheel@v3.1
-        env:
-          MACOSX_DEPLOYMENT_TARGET: 14.0
-      - name: CI Build Wheel macos-13
-        if: matrix.os == 'macos-13'
-        uses: pypa/cibuildwheel@v3.1
-        env:
-          MACOSX_DEPLOYMENT_TARGET: 13.0
-      - name: CI Build Wheel linux
-        if: matrix.os == 'ubuntu-24.04'
-        uses: pypa/cibuildwheel@v3.1
+      - name: CI Build Wheel
+        uses: pypa/cibuildwheel@v3.2
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
