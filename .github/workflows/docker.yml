@@ -1,7 +1,7 @@
 name: Docker
 on:
   push:
-    branches: [ master ]
+    branches: [master]
 jobs:
   ubuntu-dev:
     if: ${{!contains(github.event.head_commit.message, '[skip]')}}
@@ -27,7 +27,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           package_name: vpmr
           untagged_only: true
-          owner_type: 'user'
+          owner_type: "user"
       - name: QEMU
         uses: docker/setup-qemu-action@v3
       - name: Buildx

@@ -1,9 +1,9 @@
 name: Coverage
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 jobs:
   ubuntu:
     runs-on: ubuntu-22.04
@@ -30,7 +30,7 @@ jobs:
       - name: Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: "3.10"
       - name: Build
         run: pip install --verbose .
       - name: Test

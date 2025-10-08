@@ -14,6 +14,8 @@ dynamic = [
 name = "pyvpmr"
 description = "The VPMR Algorithm"
 requires-python = ">=3.8"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 keywords = [
     "vpmr",
     "kernel function",
@@ -24,7 +26,6 @@ classifiers = [
     "Intended Audience :: Education",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
@@ -32,23 +33,15 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = [
     "numpy",
     "matplotlib",
 ]
-
-[[project.authors]]
-name = "Theodore Chang"
-email = "tlcfem@gmail.com"
-
-[[project.maintainers]]
-name = "Theodore Chang"
-email = "tlcfem@gmail.com"
-
-[project.license]
-file = "LICENSE"
+authors = [{ name = "Theodore Chang", email = "tlcfem@gmail.com" }]
+maintainers = [{ name = "Theodore Chang", email = "tlcfem@gmail.com" }]
 
 [project.urls]
 Homepage = "https://github.com/TLCFEM/vpmr"
