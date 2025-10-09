@@ -11,7 +11,7 @@ RUN mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make
 
 FROM ubuntu:22.04 AS runtime
 
-RUN apt-get update -y && apt-get install -y libtbb12 libmpfr6 libgmp10 && apt-get clean -y
+RUN apt-get update -y && apt-get install -y libtbb12 && apt-get clean -y
 
 COPY --from=build /vpmr/build/vpmr /usr/local/bin/vpmr
 
