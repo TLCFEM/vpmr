@@ -59,7 +59,7 @@ jobs:
           overwrite: true
       - name: VirusTotal
         if: steps.release.outputs.release_id
-        uses: cssnr/virustotal-action@feature-catch-404
+        uses: cssnr/virustotal-action@v1
         with:
           vt_api_key: ${{ secrets.VIRUSTOTAL_KEY }}
           release_id: v${{ env.VPMR_VERSION }}
