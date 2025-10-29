@@ -57,6 +57,7 @@ endif ()
 
 add_executable(vpmr src/VPMR.cpp)
 foreach (TGT "MPFR" "GMPXX" "GMP")
+    message(STATUS "${TGT}: ${${TGT}_STATIC_LIB}")
     target_link_libraries(vpmr ${${TGT}_STATIC_LIB})
 endforeach ()
 

@@ -267,15 +267,13 @@ The binary requires available `gmp`, `mpfr` and `tbb` libraries.
 
 ```bash
 ❯ ldd vpmr
-    linux-vdso.so.1 (0x00007ffec2fa0000)
-    libtbb.so.12 => /lib/x86_64-linux-gnu/libtbb.so.12 (0x00007fd1dcb13000)
-    libgmp.so.10 => /lib/x86_64-linux-gnu/libgmp.so.10 (0x00007fd1dca92000)
-    libmpfr.so.6 => /lib/x86_64-linux-gnu/libmpfr.so.6 (0x00007fd1dc9d8000)
-    libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fd1dac00000)
-    libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fd1daf20000)
-    libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fd1daf00000)
-    libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fd1daa1f000)
-    /lib64/ld-linux-x86-64.so.2 (0x00007fd1dcb78000)
+    linux-vdso.so.1 (0x00007ffde03b3000)
+    libtbb.so.12 => /lib/x86_64-linux-gnu/libtbb.so.12 (0x00007f5031e2e000)
+    libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f5031200000)
+    libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f5031520000)
+    libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f5031500000)
+    libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f503101e000)
+    /lib64/ld-linux-x86-64.so.2 (0x00007f5031e93000)
 ```
 
 The distributed `appimage` is portable.
