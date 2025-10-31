@@ -41,8 +41,6 @@ jobs:
           cp /mingw64/bin/libgcc_s_seh-1.dll release
           cp /mingw64/bin/libstdc++-6.dll release
           cp /mingw64/bin/libwinpthread-1.dll release
-          cp /mingw64/bin/libgmp-10.dll release
-          cp /mingw64/bin/libmpfr-6.dll release
           cp /mingw64/bin/libtbb12.dll release
           cd release
           7z a ../../vpmr-${{ env.VPMR_VERSION }}-win.7z *
