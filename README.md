@@ -217,7 +217,7 @@ To avoid the hassle of installing dependencies, you can use the provided `Docker
 For example,
 
 ```bash
-wget -q https://raw.githubusercontent.com/TLCFEM/vpmr/master/Dockerfile
+wget -q https://raw.githubusercontent.com/TLCFEM/vpmr/master/resource/Dockerfile
 docker build -t vpmr -f Dockerfile .
 ```
 
