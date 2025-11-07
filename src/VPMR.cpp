@@ -144,10 +144,6 @@ public:
         : poly(D) {}
 
     template<typename Function> mpreal integrate(Function&& f) const {
-        // mpreal sum{0, config.precision_bits};
-        // for (int i = 0; i < int(poly.degree); ++i)
-        //     sum += poly.weight(i) * f(i, poly.root(i));
-        // return sum;
         return tbb::parallel_deterministic_reduce(
             tbb::blocked_range(0, static_cast<int>(poly.degree)), mpreal(0, config.precision_bits),
             [&](const tbb::blocked_range<int>& r, mpreal running_total) {
@@ -228,6 +224,8 @@ Expression kernel{};
 class Integrand {
     static tbb::concurrent_unordered_map<int, mpreal> value;
 
+    const mpreal ONE = mpreal(1, config.precision_bits);
+
     const int j;
 
 public:
@@ -235,7 +233,7 @@ public:
         : j(J) {}
 
     mpreal operator()(const int i, const mpreal& r) const {
-        if(value.find(i) == value.end()) value.insert(std::make_pair(i, kernel.value(-config.max_exponent * log((mpreal(1, config.precision_bits) + cos(r)) >> 1))));
+        if(value.find(i) == value.end()) value.insert(std::make_pair(i, kernel.value(-config.max_exponent * log((ONE + cos(r)) >> 1))));
         return value[i] * cos(j * r);
     }
 };

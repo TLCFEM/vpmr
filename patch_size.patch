@@ -1,8 +1,8 @@
 diff --git a/Eigen/src/Core/products/GeneralBlockPanelKernel.h b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-index e72c6b48e..4f918cd20 100644
+index 7d308382e..0e50933cb 100644
 --- a/Eigen/src/Core/products/GeneralBlockPanelKernel.h
 +++ b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-@@ -2108,7 +2108,8 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+@@ -2104,7 +2104,8 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
          }
        }
  #endif
@@ -12,7 +12,7 @@ index e72c6b48e..4f918cd20 100644
          for (Index i = i1; i < actual_panel_end; i += 2 * LhsProgress) {
            // We selected a 2*Traits::LhsProgress x nr micro block of res which is entirely
            // stored into 2 x nr registers.
-@@ -2227,7 +2228,7 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+@@ -2223,7 +2224,7 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
            r3.storePacket(0 * Traits::ResPacketSize, R2);
            r3.storePacket(1 * Traits::ResPacketSize, R3);
          }
@@ -70,10 +70,10 @@ index ba72a8a4f..4ce9f99ab 100644
      if (i < n4) {
        ResPacket c0 = pset1<ResPacket>(ResScalar(0)), c1 = pset1<ResPacket>(ResScalar(0)),
 diff --git a/Eigen/src/SVD/BDCSVD.h b/Eigen/src/SVD/BDCSVD.h
-index 6fab905e5..9ae75c579 100644
+index db1e4a264..ebbca2668 100644
 --- a/Eigen/src/SVD/BDCSVD.h
 +++ b/Eigen/src/SVD/BDCSVD.h
-@@ -820,6 +820,16 @@ template <typename MatrixType, int Options>
+@@ -822,6 +822,16 @@ template <typename MatrixType, int Options>
  typename BDCSVD<MatrixType, Options>::RealScalar BDCSVD<MatrixType, Options>::secularEq(
      RealScalar mu, const ArrayRef& col0, const ArrayRef& diag, const IndicesRef& perm, const ArrayRef& diagShifted,
      RealScalar shift) {
@@ -90,7 +90,7 @@ index 6fab905e5..9ae75c579 100644
    Index m = perm.size();
    RealScalar res = Literal(1);
    for (Index i = 0; i < m; ++i) {
-@@ -1161,6 +1171,8 @@ template <typename MatrixType, int Options>
+@@ -1163,6 +1173,8 @@ template <typename MatrixType, int Options>
  void BDCSVD<MatrixType, Options>::computeSingVecs(const ArrayRef& zhat, const ArrayRef& diag, const IndicesRef& perm,
                                                    const VectorType& singVals, const ArrayRef& shifts,
                                                    const ArrayRef& mus, MatrixXr& U, MatrixXr& V) {
@@ -99,7 +99,7 @@ index 6fab905e5..9ae75c579 100644
    Index n = zhat.size();
    Index m = perm.size();
  
-@@ -1170,10 +1182,13 @@ void BDCSVD<MatrixType, Options>::computeSingVecs(const ArrayRef& zhat, const Ar
+@@ -1172,10 +1184,13 @@ void BDCSVD<MatrixType, Options>::computeSingVecs(const ArrayRef& zhat, const Ar
        if (m_compV) V.col(k) = VectorType::Unit(n, k);
      } else {
        U.col(k).setZero();
