@@ -66,17 +66,17 @@ jobs:
           cd eigen && git apply ../patch_size.patch && cd ..
       - name: CI Build Wheel macOS 14
         if: contains(matrix.os, 'macos-14')
-        uses: pypa/cibuildwheel@v3.2
+        uses: pypa/cibuildwheel@v3.3
         env:
           MACOSX_DEPLOYMENT_TARGET: "14"
       - name: CI Build Wheel macOS 15
         if: contains(matrix.os, 'macos-15')
-        uses: pypa/cibuildwheel@v3.2
+        uses: pypa/cibuildwheel@v3.3
         env:
           MACOSX_DEPLOYMENT_TARGET: "15"
       - name: CI Build Wheel Linux
         if: contains(matrix.os, 'ubuntu')
-        uses: pypa/cibuildwheel@v3.2
+        uses: pypa/cibuildwheel@v3.3
       - name: Upload
         uses: actions/upload-artifact@v5
         with:
