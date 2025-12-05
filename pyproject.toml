@@ -53,12 +53,12 @@ skip = ["*pp*"]
 
 [[tool.cibuildwheel.overrides]]
 select = "*macosx*"
-before-all = "brew install tbb mpfr gmp"
+before-all = "brew install tbb mpfr"
 
 [[tool.cibuildwheel.overrides]]
 select = "*manylinux*"
-before-all = "yum install -y gcc-c++ tbb-devel mpfr-devel gmp-devel"
+before-all = "yum install -y gcc-c++ tbb-devel mpfr-devel gmp-devel gmp-static"
 
 [[tool.cibuildwheel.overrides]]
 select = "*musllinux*"
-before-all = "apk add g++ onetbb-dev mpfr-dev gmp-dev"
+before-all = "apk add g++ onetbb-dev mpfr-dev gmp-dev gmp-static"
