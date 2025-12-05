@@ -48,26 +48,50 @@ The following libraries are included:
 
 ## How To
 
-### Python Package
+If the application needs to be compiled on your machine (build the binary from source, python wheels are not available, etc.), you need to install the compiler and three libraries.
 
-> [!WARNING]
-> The Python module needs external libraries to be installed.
+1. On RPM-based Linux distributions (using `dnf`), you need to `sudo dnf install -y gcc-c++ tbb-devel mpfr-devel gmp-devel`.
+2. On DEB-based Linux distributions (using `apt`), you need to `sudo apt install -y g++ libtbb-dev libmpfr-dev libgmp-dev`.
+3. On macOS, you need to `brew install gcc tbb mpfr gmp`.
+
+If the binary is available (run the pre-compiled binary, python wheels are available, etc.), you only need the runtimes of three libraries.
+You can find the exact names on [pkgs.org](https://pkgs.org/) by searching `tbb`, `gmp` and `mpfr`.
 
 > [!WARNING]
 > Windows users need to have a working [MSYS2](https://www.msys2.org/) environment. See below for more details.
 > For other environments, you need to figure out how to install `gmp` and `mpfr` on your own.
 
-On RPM-based Linux distributions (using `dnf`), if you are:
+### Docker
 
-1. compiling the application from source (or wheels are not
-   available), `sudo dnf install -y gcc-c++ tbb-devel mpfr-devel gmp-devel`
-2. using the packaged binary (wheels are available), `sudo dnf install -y gmp mpfr tbb`
+You can simply pull the image using the following command.
 
-On DEB-based Linux distributions (using `apt`), you need to `sudo apt install -y g++ libtbb-dev libmpfr-dev libgmp-dev`.
+```bash
+docker pull tlcfem/vpmr
+# or using GitHub Container Registry
+docker pull ghcr.io/tlcfem/vmpr
+```
 
-On macOS, you need to `brew install tbb mpfr gmp`.
+Just use it as you would normally do with any other docker images.
+For example,
 
-Then install the package with `pip`.
+```bash
+docker run tlcfem/vpmr -n 30
+```
+
+To build the image locally, use the provided `Dockerfile`.
+
+```bash
+wget -q https://raw.githubusercontent.com/TLCFEM/vpmr/master/resource/Dockerfile
+docker build -t vpmr -f Dockerfile .
+```
+
+### Python Package
+
+> [!WARNING]
+> The Python module needs external libraries to be installed.
+> See above.
+
+On most platforms (Linux and macOS), wheels are available, simply install the package with `pip`.
 
 ```bash
 pip install pyvpmr
@@ -93,7 +117,7 @@ if __name__ == '__main__':
     plot(m, s, kernel)
 ```
 
-### Usage
+### Standalone Binary
 
 All available options are:
 
@@ -211,28 +235,9 @@ The following is a typical performance profile on a i7-10750H platform using the
 > The compilation would take minutes and around 2 GB memory.
 > You need to install libraries `gmp`, `mpfr` and `tbb` before compiling.
 
-### Docker
-
-To avoid the hassle of installing dependencies, you can use the provided `Dockerfile`.
-For example,
-
-```bash
-wget -q https://raw.githubusercontent.com/TLCFEM/vpmr/master/resource/Dockerfile
-docker build -t vpmr -f Dockerfile .
-```
-
-Or you simply pull using the following command.
-
-```bash
-docker pull tlcfem/vpmr
-# or using GitHub Container Registry
-docker pull ghcr.io/tlcfem/vmpr
-```
-
 ### Windows
 
-Use the following instructions based on [MSYS2](https://www.msys2.org/), or follow the Linux instructions below with
-WSL.
+Use the following instructions based on [MSYS2](https://www.msys2.org/), or follow the Linux instructions below with WSL.
 
 ```bash
 # install necessary packages
@@ -252,28 +257,10 @@ ninja
 The following is based on Fedora.
 
 ```bash
-sudo dnf install gcc g++ gfortran cmake git -y
-sudo dnf install tbb-devel mpfr-devel gmp-devel -y
+sudo dnf install gcc g++ cmake git tbb-devel mpfr-devel gmp-devel -y
 git clone --recurse-submodules --depth 1 https://github.com/TLCFEM/vpmr.git
 cd vpmr
 cd eigen && git apply --ignore-space-change --ignore-whitespace ../patch_size.patch && cd ..
 cmake -DCMAKE_BUILD_TYPE=Release .
 make
 ```
-
-## Binary
-
-The binary requires available `gmp`, `mpfr` and `tbb` libraries.
-
-```bash
-❯ ldd vpmr
-    linux-vdso.so.1 (0x00007ffde03b3000)
-    libtbb.so.12 => /lib/x86_64-linux-gnu/libtbb.so.12 (0x00007f5031e2e000)
-    libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f5031200000)
-    libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f5031520000)
-    libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f5031500000)
-    libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f503101e000)
-    /lib64/ld-linux-x86-64.so.2 (0x00007f5031e93000)
-```
-
-The distributed `appimage` is portable.
