@@ -57,8 +57,8 @@ before-all = "brew install tbb mpfr"
 
 [[tool.cibuildwheel.overrides]]
 select = "*manylinux*"
-before-all = "yum install -y gcc-c++ tbb-devel mpfr-devel gmp-devel gmp-static"
+before-all = "yum install -y gcc-c++ tbb-devel mpfr-devel gmp-devel"
 
 [[tool.cibuildwheel.overrides]]
 select = "*musllinux*"
-before-all = "apk add g++ onetbb-dev mpfr-dev gmp-dev gmp-static"
+before-all = "apk add g++ onetbb-dev mpfr-dev gmp-dev"
