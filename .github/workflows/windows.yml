@@ -63,7 +63,7 @@ jobs:
           release_id: v${{ env.VPMR_VERSION }}
           release_heading: "### 🛡️ VirusTotal Results"
       - name: Upload
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: vpmr-${{ env.VPMR_VERSION }}-win.7z
           path: vpmr-${{ env.VPMR_VERSION }}-win.7z
