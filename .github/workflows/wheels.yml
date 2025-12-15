@@ -22,7 +22,7 @@ jobs:
       - name: Check
         run: pipx run twine check dist/*
       - name: Upload
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: pyvpmr-sdist
           path: dist/*.tar.gz
@@ -78,7 +78,7 @@ jobs:
         if: contains(matrix.os, 'ubuntu')
         uses: pypa/cibuildwheel@v3.3
       - name: Upload
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: pyvpmr-${{ matrix.os }}
           path: wheelhouse/*.whl
