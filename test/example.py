@@ -1,4 +1,4 @@
-#  Copyright (C) 2024-2025 Theodore Chang
+#  Copyright (C) 2024-2026 Theodore Chang
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -19,10 +19,10 @@ from pyvpmr import vpmr, plot, to_global_damping
 
 
 def kernel(x):
-    return np.exp(-x ** 2 / 4) * x ** 3
+    return np.exp(-(x**2) / 4) * x**3
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     m, s = vpmr(n=60, k="exp(-t^2/4)*t^3", e=1e-12, c=10)
     print(to_global_damping(m, s))
     plot(m, s, kernel)
