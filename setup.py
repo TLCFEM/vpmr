@@ -87,7 +87,6 @@ def initialize():
 
 # noinspection PyTypeChecker
 setup(
-    version=datetime.now().strftime("%y%m%d"),
     long_description=(Path(__file__).parent / "README.md")
     .read_text(encoding="utf8")
     .replace(
