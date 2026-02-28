@@ -1,8 +1,33 @@
 diff --git a/Eigen/src/Core/products/GeneralBlockPanelKernel.h b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-index 7238fcd23..9e2edd80e 100644
+index f693e898d8..bc1d72851e 100644
 --- a/Eigen/src/Core/products/GeneralBlockPanelKernel.h
 +++ b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-@@ -2104,7 +2104,8 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+@@ -1173,17 +1173,13 @@ struct gebp_micro_step {
+ #ifdef EIGEN_HAS_CXX17_IFCONSTEXPR
+ // C++17: pin accumulators when they're plain SSE vectors (sizeof matches FullLhsPacket).
+ // For complex types, AccPacket is a struct (DoublePacket) and the asm is safely discarded.
+-#define EIGEN_GEBP_SSE_SPILLING_WORKAROUND(MrPackets, NrCols, A, ACC, LhsArray, FullLhsPacket)                    \
+-  EIGEN_IF_CONSTEXPR(                                                                                             \
+-      (MrPackets <= 2 && NrCols >= 4 &&                                                                           \
+-       std::is_same<std::remove_all_extents_t<std::remove_reference_t<LhsArray>>, FullLhsPacket>::value &&        \
+-       sizeof(ACC[0]) == sizeof(FullLhsPacket))) {                                                                \
+-    EIGEN_IF_CONSTEXPR(MrPackets == 2 && NrCols == 4) {                                                           \
+-      __asm__(""                                                                                                  \
+-              : "+x"(ACC[0]), "+x"(ACC[1]), "+x"(ACC[2]), "+x"(ACC[3]), "+x"(ACC[4]), "+x"(ACC[5]), "+x"(ACC[6]), \
+-                "+x"(ACC[7]));                                                                                    \
+-    }                                                                                                             \
+-    EIGEN_GEBP_SSE_1P_WORKAROUND(MrPackets, NrCols, A, ACC)                                                       \
++#define EIGEN_GEBP_SSE_SPILLING_WORKAROUND(MrPackets, NrCols, A, ACC, LhsArray, FullLhsPacket)             \
++  EIGEN_IF_CONSTEXPR(                                                                                      \
++      (MrPackets <= 2 && NrCols >= 4 &&                                                                    \
++       std::is_same<std::remove_all_extents_t<std::remove_reference_t<LhsArray>>, FullLhsPacket>::value && \
++       sizeof(ACC[0]) == sizeof(FullLhsPacket))) {                                                         \
++    EIGEN_IF_CONSTEXPR(MrPackets == 2 && NrCols == 4) {}                                                   \
++    EIGEN_GEBP_SSE_1P_WORKAROUND(MrPackets, NrCols, A, ACC)                                                \
+   }
+ #else
+ // C++14: only pin LHS packets (A), not accumulators, to avoid asm errors with complex types.
+@@ -1460,11 +1456,12 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
          }
        }
  #endif
@@ -10,44 +35,27 @@ index 7238fcd23..9e2edd80e 100644
 +      tbb::parallel_for(packet_cols8 / 4, packet_cols4 / 4, [&](Index j2) {
 +        j2 *= 4;
          for (Index i = i1; i < actual_panel_end; i += 2 * LhsProgress) {
-           // We selected a 2*Traits::LhsProgress x nr micro block of res which is entirely
-           // stored into 2 x nr registers.
-@@ -2223,7 +2224,7 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
-           r3.storePacket(0 * Traits::ResPacketSize, R2);
-           r3.storePacket(1 * Traits::ResPacketSize, R3);
+           micro_panel(fix<2>, fix<4>, traits, i, j2);
          }
 -      }
 +      });
- 
-       // Deal with remaining columns of the rhs
        for (Index j2 = packet_cols4; j2 < cols; j2++) {
+         for (Index i = i1; i < actual_panel_end; i += 2 * LhsProgress) {
+           micro_panel(fix<2>, fix<1>, traits, i, j2);
 diff --git a/Eigen/src/Core/products/GeneralMatrixVector.h b/Eigen/src/Core/products/GeneralMatrixVector.h
-index ba72a8a4f..4ce9f99ab 100644
+index 5f74e37dee..9cc956624b 100644
 --- a/Eigen/src/Core/products/GeneralMatrixVector.h
 +++ b/Eigen/src/Core/products/GeneralMatrixVector.h
-@@ -150,30 +150,20 @@ general_matrix_vector_product<Index, LhsScalar, LhsMapper, ColMajor, ConjugateLh
+@@ -221,7 +221,21 @@ general_matrix_vector_product<Index, LhsScalar, LhsMapper, ColMajor, ConjugateLh
+   for (Index j2 = 0; j2 < cols; j2 += block_cols) {
      Index jend = numext::mini(j2 + block_cols, cols);
      Index i = 0;
-     for (; i < n8; i += ResPacketSize * 8) {
--      ResPacket c0 = pset1<ResPacket>(ResScalar(0)), c1 = pset1<ResPacket>(ResScalar(0)),
--                c2 = pset1<ResPacket>(ResScalar(0)), c3 = pset1<ResPacket>(ResScalar(0)),
--                c4 = pset1<ResPacket>(ResScalar(0)), c5 = pset1<ResPacket>(ResScalar(0)),
--                c6 = pset1<ResPacket>(ResScalar(0)), c7 = pset1<ResPacket>(ResScalar(0));
--
--      for (Index j = j2; j < jend; j += 1) {
--        RhsPacket b0 = pset1<RhsPacket>(rhs(j, 0));
--        c0 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 0, j), b0, c0);
--        c1 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 1, j), b0, c1);
--        c2 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 2, j), b0, c2);
--        c3 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 3, j), b0, c3);
--        c4 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 4, j), b0, c4);
--        c5 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 5, j), b0, c5);
--        c6 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 6, j), b0, c6);
--        c7 = pcj.pmadd(lhs.template load<LhsPacket, LhsAlignment>(i + LhsPacketSize * 7, j), b0, c7);
+-    for (; i < n8; i += ResPacketSize * 8) process_rows<8>(i, j2, jend, lhs, rhs, res, palpha, pcj);
++    for (; i < n8; i += ResPacketSize * 8)
 +      for (auto x = 0; x < 8; ++x) {
 +        const auto offset = i + ResPacketSize * x;
 +        pstoreu(res + offset, pmadd(tbb::parallel_deterministic_reduce(
-+                                        tbb::blocked_range<Index>(j2, jend), pset1<ResPacket>(ResScalar(0)),
++                                        tbb::blocked_range<Index>(j2, jend), pzero(ResPacket{}),
 +                                        [&](const tbb::blocked_range<Index>& r, ResPacket running_total) {
 +                                          for (auto j = r.begin(); j < r.end(); ++j)
 +                                            running_total += pcj.pmul(
@@ -57,26 +65,18 @@ index ba72a8a4f..4ce9f99ab 100644
 +                                        },
 +                                        std::plus<>()),
 +                                    palpha, ploadu<ResPacket>(res + offset)));
-       }
--      pstoreu(res + i + ResPacketSize * 0, pmadd(c0, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 0)));
--      pstoreu(res + i + ResPacketSize * 1, pmadd(c1, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 1)));
--      pstoreu(res + i + ResPacketSize * 2, pmadd(c2, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 2)));
--      pstoreu(res + i + ResPacketSize * 3, pmadd(c3, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 3)));
--      pstoreu(res + i + ResPacketSize * 4, pmadd(c4, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 4)));
--      pstoreu(res + i + ResPacketSize * 5, pmadd(c5, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 5)));
--      pstoreu(res + i + ResPacketSize * 6, pmadd(c6, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 6)));
--      pstoreu(res + i + ResPacketSize * 7, pmadd(c7, palpha, ploadu<ResPacket>(res + i + ResPacketSize * 7)));
-     }
++      }
      if (i < n4) {
-       ResPacket c0 = pset1<ResPacket>(ResScalar(0)), c1 = pset1<ResPacket>(ResScalar(0)),
-diff --git a/Eigen/src/SVD/BDCSVD.h b/Eigen/src/SVD/BDCSVD.h
-index db1e4a264..ebbca2668 100644
---- a/Eigen/src/SVD/BDCSVD.h
-+++ b/Eigen/src/SVD/BDCSVD.h
-@@ -822,6 +822,16 @@ template <typename MatrixType, int Options>
- typename BDCSVD<MatrixType, Options>::RealScalar BDCSVD<MatrixType, Options>::secularEq(
-     RealScalar mu, const ArrayRef& col0, const ArrayRef& diag, const IndicesRef& perm, const ArrayRef& diagShifted,
-     RealScalar shift) {
+       process_rows<4>(i, j2, jend, lhs, rhs, res, palpha, pcj);
+       i += ResPacketSize * 4;
+diff --git a/Eigen/src/SVD/BDCSVDImpl.h b/Eigen/src/SVD/BDCSVDImpl.h
+index 4d0e70f77e..4cb67c775f 100644
+--- a/Eigen/src/SVD/BDCSVDImpl.h
++++ b/Eigen/src/SVD/BDCSVDImpl.h
+@@ -483,6 +483,16 @@ typename bdcsvd_impl<RealScalar_>::RealScalar bdcsvd_impl<RealScalar_>::secularE
+                                                                                   const IndicesRef& perm,
+                                                                                   const ArrayRef& diagShifted,
+                                                                                   RealScalar shift) {
 +  return tbb::parallel_deterministic_reduce(
 +      tbb::blocked_range<Index>(Index(0), perm.size()), RealScalar(1),
 +      [&](const tbb::blocked_range<Index>& r, RealScalar running_total) {
@@ -90,16 +90,16 @@ index db1e4a264..ebbca2668 100644
    Index m = perm.size();
    RealScalar res = Literal(1);
    for (Index i = 0; i < m; ++i) {
-@@ -1163,6 +1173,8 @@ template <typename MatrixType, int Options>
- void BDCSVD<MatrixType, Options>::computeSingVecs(const ArrayRef& zhat, const ArrayRef& diag, const IndicesRef& perm,
-                                                   const VectorType& singVals, const ArrayRef& shifts,
-                                                   const ArrayRef& mus, MatrixXr& U, MatrixXr& V) {
+@@ -815,6 +825,8 @@ template <typename RealScalar_>
+ void bdcsvd_impl<RealScalar_>::computeSingVecs(const ArrayRef& zhat, const ArrayRef& diag, const IndicesRef& perm,
+                                                const VectorType& singVals, const ArrayRef& shifts, const ArrayRef& mus,
+                                                MatrixXr& U, MatrixXr& V) {
 +  static tbb::affinity_partitioner ap;
 +
    Index n = zhat.size();
    Index m = perm.size();
  
-@@ -1172,10 +1184,13 @@ void BDCSVD<MatrixType, Options>::computeSingVecs(const ArrayRef& zhat, const Ar
+@@ -824,10 +836,13 @@ void bdcsvd_impl<RealScalar_>::computeSingVecs(const ArrayRef& zhat, const Array
        if (m_compV) V.col(k) = VectorType::Unit(n, k);
      } else {
        U.col(k).setZero();

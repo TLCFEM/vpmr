@@ -1,6 +1,5 @@
 import os
 import platform
-from datetime import datetime
 from pathlib import Path
 
 from pybind11.setup_helpers import Pybind11Extension, build_ext
