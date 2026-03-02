@@ -99,7 +99,7 @@ jobs:
           release_id: v${{ env.VPMR_VERSION }}
           release_heading: "### 🛡️ VirusTotal Results"
       - name: Upload
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: vpmr-${{ env.VPMR_VERSION }}-x86_64.AppImage
           path: vpmr-${{ env.VPMR_VERSION }}-x86_64.AppImage
