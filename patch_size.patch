@@ -1,5 +1,5 @@
 diff --git a/Eigen/src/Core/products/GeneralBlockPanelKernel.h b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-index f693e898d8..bc1d72851e 100644
+index 51d46f893f..1853cddd5e 100644
 --- a/Eigen/src/Core/products/GeneralBlockPanelKernel.h
 +++ b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
 @@ -1173,17 +1173,13 @@ struct gebp_micro_step {
