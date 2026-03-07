@@ -1,33 +1,8 @@
 diff --git a/Eigen/src/Core/products/GeneralBlockPanelKernel.h b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-index 51d46f893f..1853cddd5e 100644
+index 9645958f08..29a39ff4e5 100644
 --- a/Eigen/src/Core/products/GeneralBlockPanelKernel.h
 +++ b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-@@ -1173,17 +1173,13 @@ struct gebp_micro_step {
- #ifdef EIGEN_HAS_CXX17_IFCONSTEXPR
- // C++17: pin accumulators when they're plain SSE vectors (sizeof matches FullLhsPacket).
- // For complex types, AccPacket is a struct (DoublePacket) and the asm is safely discarded.
--#define EIGEN_GEBP_SSE_SPILLING_WORKAROUND(MrPackets, NrCols, A, ACC, LhsArray, FullLhsPacket)                    \
--  EIGEN_IF_CONSTEXPR(                                                                                             \
--      (MrPackets <= 2 && NrCols >= 4 &&                                                                           \
--       std::is_same<std::remove_all_extents_t<std::remove_reference_t<LhsArray>>, FullLhsPacket>::value &&        \
--       sizeof(ACC[0]) == sizeof(FullLhsPacket))) {                                                                \
--    EIGEN_IF_CONSTEXPR(MrPackets == 2 && NrCols == 4) {                                                           \
--      __asm__(""                                                                                                  \
--              : "+x"(ACC[0]), "+x"(ACC[1]), "+x"(ACC[2]), "+x"(ACC[3]), "+x"(ACC[4]), "+x"(ACC[5]), "+x"(ACC[6]), \
--                "+x"(ACC[7]));                                                                                    \
--    }                                                                                                             \
--    EIGEN_GEBP_SSE_1P_WORKAROUND(MrPackets, NrCols, A, ACC)                                                       \
-+#define EIGEN_GEBP_SSE_SPILLING_WORKAROUND(MrPackets, NrCols, A, ACC, LhsArray, FullLhsPacket)             \
-+  EIGEN_IF_CONSTEXPR(                                                                                      \
-+      (MrPackets <= 2 && NrCols >= 4 &&                                                                    \
-+       std::is_same<std::remove_all_extents_t<std::remove_reference_t<LhsArray>>, FullLhsPacket>::value && \
-+       sizeof(ACC[0]) == sizeof(FullLhsPacket))) {                                                         \
-+    EIGEN_IF_CONSTEXPR(MrPackets == 2 && NrCols == 4) {}                                                   \
-+    EIGEN_GEBP_SSE_1P_WORKAROUND(MrPackets, NrCols, A, ACC)                                                \
-   }
- #else
- // C++14: only pin LHS packets (A), not accumulators, to avoid asm errors with complex types.
-@@ -1460,11 +1456,12 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+@@ -1451,11 +1451,12 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
          }
        }
  #endif
