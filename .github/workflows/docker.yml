@@ -31,7 +31,7 @@ jobs:
       - name: QEMU
         uses: docker/setup-qemu-action@v3
       - name: Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
       - name: Build
         uses: docker/build-push-action@v7
         with:
