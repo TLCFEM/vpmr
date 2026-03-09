@@ -29,7 +29,7 @@ jobs:
           untagged_only: true
           owner_type: "user"
       - name: QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
       - name: Buildx
         uses: docker/setup-buildx-action@v4
       - name: Build
