@@ -18,7 +18,7 @@ index 9645958f08..29a39ff4e5 100644
          for (Index i = i1; i < actual_panel_end; i += 2 * LhsProgress) {
            micro_panel(fix<2>, fix<1>, traits, i, j2);
 diff --git a/Eigen/src/Core/products/GeneralMatrixVector.h b/Eigen/src/Core/products/GeneralMatrixVector.h
-index e0205defb0..ac5eb4613a 100644
+index 40694f2e6f..75e93f5b02 100644
 --- a/Eigen/src/Core/products/GeneralMatrixVector.h
 +++ b/Eigen/src/Core/products/GeneralMatrixVector.h
 @@ -221,7 +221,21 @@ general_matrix_vector_product<Index, LhsScalar, LhsMapper, ColMajor, ConjugateLh
