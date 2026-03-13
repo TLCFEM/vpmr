@@ -1,8 +1,8 @@
 diff --git a/Eigen/src/Core/products/GeneralBlockPanelKernel.h b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-index 9645958f08..29a39ff4e5 100644
+index cc22dc75ac..94ce16f836 100644
 --- a/Eigen/src/Core/products/GeneralBlockPanelKernel.h
 +++ b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-@@ -1451,11 +1451,12 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+@@ -1456,11 +1456,12 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
          }
        }
  #endif
