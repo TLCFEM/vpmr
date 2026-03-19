@@ -16,7 +16,7 @@ jobs:
           submodules: true
       - name: Setup
         run: |
-          cd eigen && git apply ../patch_size.patch && cd ..
+          cd eigen && git apply ../parallelize.patch && cd ..
       - name: Build
         run: pipx run build --sdist
       - name: Check
@@ -63,7 +63,7 @@ jobs:
           submodules: true
       - name: Setup
         run: |
-          cd eigen && git apply ../patch_size.patch && cd ..
+          cd eigen && git apply ../parallelize.patch && cd ..
       - name: CI Build Wheel macOS 14
         if: contains(matrix.os, 'macos-14')
         uses: pypa/cibuildwheel@v3.4

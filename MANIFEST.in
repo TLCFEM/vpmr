@@ -5,7 +5,7 @@ graft mpreal
 graft pybind11
 graft pyvpmr
 graft src
-include patch_size.patch
+include parallelize.patch
 prune eigen/.gitlab
 prune eigen/bench
 prune eigen/ci

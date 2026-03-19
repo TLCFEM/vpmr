@@ -28,7 +28,7 @@ jobs:
       - name: Compile
         shell: msys2 {0}
         run: |
-          cd eigen && git apply --ignore-space-change --ignore-whitespace ../patch_size.patch && cd ..
+          cd eigen && git apply --ignore-space-change --ignore-whitespace ../parallelize.patch && cd ..
           mkdir build && cd build
           cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_PYTHON3=OFF ..
           cmake --build .

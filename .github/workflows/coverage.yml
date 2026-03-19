@@ -20,7 +20,7 @@ jobs:
       - name: Compile
         run: |
           git config --global --add safe.directory /__w/vpmr/vpmr
-          cd eigen && git apply ../patch_size.patch && cd ..
+          cd eigen && git apply ../parallelize.patch && cd ..
           mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug ..
           make -j"$(nproc)"
           ./vpmr -h

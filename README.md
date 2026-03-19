@@ -246,7 +246,7 @@ pacman -S git mingw-w64-x86_64-cmake mingw-w64-x86_64-tbb mingw-w64-x86_64-gcc m
 git clone --recurse-submodules --depth 1 https://github.com/TLCFEM/vpmr.git
 cd vpmr
 # apply patch to enable parallel evaluation of some loops in SVD
-cd eigen && git apply --ignore-space-change --ignore-whitespace ../patch_size.patch && cd ..
+cd eigen && git apply --ignore-space-change --ignore-whitespace ../parallelize.patch && cd ..
 # configure and compile
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release .
 ninja
@@ -260,7 +260,7 @@ The following is based on Fedora.
 sudo dnf install gcc g++ cmake git tbb-devel mpfr-devel gmp-devel -y
 git clone --recurse-submodules --depth 1 https://github.com/TLCFEM/vpmr.git
 cd vpmr
-cd eigen && git apply --ignore-space-change --ignore-whitespace ../patch_size.patch && cd ..
+cd eigen && git apply --ignore-space-change --ignore-whitespace ../parallelize.patch && cd ..
 cmake -DCMAKE_BUILD_TYPE=Release .
 make
 ```
