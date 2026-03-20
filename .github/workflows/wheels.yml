@@ -16,11 +16,10 @@ jobs:
           submodules: true
       - name: Setup
         run: |
+          sed -i -E 's/^version = "[0-9]{6}"$/version = "'"$(date +%y%m%d)"'"/' pyproject.toml
           cd eigen && git apply ../parallelize.patch && cd ..
-      - name: Build
-        run: pipx run build --sdist
-      - name: Check
-        run: pipx run twine check dist/*
+          pipx run build --sdist
+          pipx run twine check dist/*
       - name: Upload
         uses: actions/upload-artifact@v7
         with:
