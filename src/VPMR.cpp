@@ -35,7 +35,7 @@ struct Config {
     bool print_weight = false;
     bool print_singular_value = false;
     bool omit_trivial_terms = true;
-    int max_terms = 10;
+    int max_terms = 20;
     int max_exponent = 4;
     int precision_bits = 512;
     int quadrature_order = 500;
@@ -427,7 +427,7 @@ int print_helper() {
     std::cout << "Compiled on: " << __DATE__ << "\n\n";
     std::cout << "Usage: vpmr [options]\n\n";
     std::cout << "Options:\n\n";
-    std::cout << "    -n, --max-terms             <int>     number of terms (default: 10)\n";
+    std::cout << "    -n, --max-terms             <int>     number of terms (default: 20)\n";
     std::cout << "    -c, --max-exponent          <int>     maximum exponent (default: 4)\n";
     std::cout << "    -d, --precision-bits        <int>     number of precision bits (default: 512)\n";
     std::cout << "    -q, --quadrature-order      <int>     quadrature order (default: 500)\n";
@@ -604,7 +604,7 @@ PYBIND11_MODULE(_pyvpmr, m) {
     m.def(
         "vpmr", &vpmr_wrapper,
         "The VPMR Algorithm.\n\n"
-        ":param n: number of terms (default: 10)\n"
+        ":param n: number of terms (default: 20)\n"
         ":param c: maximum exponent (default: 4)\n"
         ":param d: number of precision bits (default: 512)\n"
         ":param q: quadrature order (default: 500)\n"
@@ -614,6 +614,6 @@ PYBIND11_MODULE(_pyvpmr, m) {
         ":param omit: omit trivial terms (default: True)\n"
         ":return: M, S\n",
         pybind11::call_guard<pybind11::gil_scoped_release>(),
-        pybind11::kw_only(), pybind11::arg("n") = 10, pybind11::arg("c") = 4, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 1.05, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "", pybind11::arg("omit") = true);
+        pybind11::kw_only(), pybind11::arg("n") = 20, pybind11::arg("c") = 4, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 1.05, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "", pybind11::arg("omit") = true);
 }
 #endif
