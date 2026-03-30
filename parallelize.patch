@@ -1,8 +1,8 @@
 diff --git a/Eigen/src/Core/products/GeneralBlockPanelKernel.h b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-index 7314b29316..29a6fb9698 100644
+index 49dc854068..ddf1a3d353 100644
 --- a/Eigen/src/Core/products/GeneralBlockPanelKernel.h
 +++ b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-@@ -1471,11 +1471,12 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+@@ -1478,11 +1478,12 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
          }
        }
  #endif
@@ -18,10 +18,10 @@ index 7314b29316..29a6fb9698 100644
          for (Index i = i1; i < actual_panel_end; i += 2 * LhsProgress) {
            micro_panel(fix<2>, fix<1>, traits, i, j2);
 diff --git a/Eigen/src/Core/products/GeneralMatrixVector.h b/Eigen/src/Core/products/GeneralMatrixVector.h
-index 40694f2e6f..75e93f5b02 100644
+index 5f6c3958d7..657339d6c4 100644
 --- a/Eigen/src/Core/products/GeneralMatrixVector.h
 +++ b/Eigen/src/Core/products/GeneralMatrixVector.h
-@@ -221,7 +221,21 @@ general_matrix_vector_product<Index, LhsScalar, LhsMapper, ColMajor, ConjugateLh
+@@ -228,7 +228,21 @@ general_matrix_vector_product<Index, LhsScalar, LhsMapper, ColMajor, ConjugateLh
    for (Index j2 = 0; j2 < cols; j2 += block_cols) {
      Index jend = numext::mini(j2 + block_cols, cols);
      Index i = 0;
@@ -45,10 +45,10 @@ index 40694f2e6f..75e93f5b02 100644
        process_rows<4>(i, j2, jend, lhs, rhs, res, palpha, pcj);
        i += ResPacketSize * 4;
 diff --git a/Eigen/src/SVD/BDCSVDImpl.h b/Eigen/src/SVD/BDCSVDImpl.h
-index 4d0e70f77e..4cb67c775f 100644
+index 49267393c7..a8184857fc 100644
 --- a/Eigen/src/SVD/BDCSVDImpl.h
 +++ b/Eigen/src/SVD/BDCSVDImpl.h
-@@ -483,6 +483,16 @@ typename bdcsvd_impl<RealScalar_>::RealScalar bdcsvd_impl<RealScalar_>::secularE
+@@ -374,6 +374,16 @@ typename bdcsvd_impl<RealScalar_>::RealScalar bdcsvd_impl<RealScalar_>::secularE
                                                                                    const IndicesRef& perm,
                                                                                    const ArrayRef& diagShifted,
                                                                                    RealScalar shift) {
@@ -65,7 +65,7 @@ index 4d0e70f77e..4cb67c775f 100644
    Index m = perm.size();
    RealScalar res = Literal(1);
    for (Index i = 0; i < m; ++i) {
-@@ -815,6 +825,8 @@ template <typename RealScalar_>
+@@ -595,6 +605,8 @@ template <typename RealScalar_>
  void bdcsvd_impl<RealScalar_>::computeSingVecs(const ArrayRef& zhat, const ArrayRef& diag, const IndicesRef& perm,
                                                 const VectorType& singVals, const ArrayRef& shifts, const ArrayRef& mus,
                                                 MatrixXr& U, MatrixXr& V) {
@@ -74,7 +74,7 @@ index 4d0e70f77e..4cb67c775f 100644
    Index n = zhat.size();
    Index m = perm.size();
  
-@@ -824,10 +836,13 @@ void bdcsvd_impl<RealScalar_>::computeSingVecs(const ArrayRef& zhat, const Array
+@@ -604,10 +616,13 @@ void bdcsvd_impl<RealScalar_>::computeSingVecs(const ArrayRef& zhat, const Array
        if (m_compV) V.col(k) = VectorType::Unit(n, k);
      } else {
        U.col(k).setZero();
