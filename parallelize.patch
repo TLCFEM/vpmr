@@ -1,5 +1,5 @@
 diff --git a/Eigen/src/Core/products/GeneralBlockPanelKernel.h b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-index 30718b2a64..6ccad1c030 100644
+index 30718b2a64..30276239d2 100644
 --- a/Eigen/src/Core/products/GeneralBlockPanelKernel.h
 +++ b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
 @@ -1444,22 +1444,24 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
@@ -7,7 +7,7 @@ index 30718b2a64..6ccad1c030 100644
        const Index actual_panel_end = (std::min)(i1 + actual_panel_rows, peeled_mc3);
        EIGEN_IF_CONSTEXPR(nr >= 8) {
 -        for (Index j2 = 0; j2 < packet_cols8; j2 += 8) {
-+        tbb::parallel_for(0, packet_cols8 / 8, [&](Index j2) {
++        tbb::parallel_for(Index(0), packet_cols8 / 8, [&](Index j2) {
 +          j2 *= 8;
            for (Index i = i1; i < actual_panel_end; i += 3 * LhsProgress) {
              micro_panel(fix<3>, fix<8>, traits, i, j2);
@@ -38,7 +38,7 @@ index 30718b2a64..6ccad1c030 100644
        Index actual_panel_end = (std::min)(i1 + actual_panel_rows, peeled_mc2);
        EIGEN_IF_CONSTEXPR(nr >= 8) {
 -        for (Index j2 = 0; j2 < packet_cols8; j2 += 8) {
-+        tbb::parallel_for(0, packet_cols8 / 8, [&](Index j2) {
++        tbb::parallel_for(Index(0), packet_cols8 / 8, [&](Index j2) {
 +          j2 *= 8;
            for (Index i = i1; i < actual_panel_end; i += 2 * LhsProgress) {
              micro_panel(fix<2>, fix<8>, traits, i, j2);
@@ -69,7 +69,7 @@ index 30718b2a64..6ccad1c030 100644
      for (Index i = peeled_mc2; i < peeled_mc1; i += LhsProgress) {
        EIGEN_IF_CONSTEXPR(nr >= 8) {
 -        for (Index j2 = 0; j2 < packet_cols8; j2 += 8) {
-+        tbb::parallel_for(0, packet_cols8 / 8, [&](Index j2) {
++        tbb::parallel_for(Index(0), packet_cols8 / 8, [&](Index j2) {
 +          j2 *= 8;
            micro_panel(fix<1>, fix<8>, traits, i, j2);
 -        }
