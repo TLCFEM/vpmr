@@ -1,9 +1,9 @@
 name: Wheels
 on:
   push:
-    branches: [master]
+    branches: [ master ]
   pull_request:
-    branches: [master]
+    branches: [ master ]
 jobs:
   build_sdist:
     name: Build
@@ -28,7 +28,7 @@ jobs:
   install_sdist:
     name: Install
     runs-on: ubuntu-22.04
-    needs: [build_sdist]
+    needs: [ build_sdist ]
     steps:
       - name: Download
         uses: actions/download-artifact@v8
@@ -84,7 +84,7 @@ jobs:
           path: wheelhouse/*.whl
   upload_all:
     name: Upload
-    needs: [build_wheels, install_sdist]
+    needs: [ build_wheels, install_sdist ]
     runs-on: ubuntu-22.04
     permissions:
       id-token: write
