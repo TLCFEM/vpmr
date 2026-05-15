@@ -1,8 +1,8 @@
 diff --git a/Eigen/src/Core/products/GeneralBlockPanelKernel.h b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-index 011e9adb69..93084079cc 100644
+index 435d933e56..1ce6b07921 100644
 --- a/Eigen/src/Core/products/GeneralBlockPanelKernel.h
 +++ b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-@@ -1452,22 +1452,24 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+@@ -1454,22 +1454,24 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
      for (Index i1 = 0; i1 < peeled_mc3; i1 += actual_panel_rows) {
        const Index actual_panel_end = (std::min)(i1 + actual_panel_rows, peeled_mc3);
        EIGEN_IF_CONSTEXPR(nr >= 8) {
@@ -33,7 +33,7 @@ index 011e9adb69..93084079cc 100644
      }
    }
  
-@@ -1483,22 +1485,24 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+@@ -1485,22 +1487,24 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
      for (Index i1 = peeled_mc3; i1 < peeled_mc2; i1 += actual_panel_rows) {
        Index actual_panel_end = (std::min)(i1 + actual_panel_rows, peeled_mc2);
        EIGEN_IF_CONSTEXPR(nr >= 8) {
@@ -64,7 +64,7 @@ index 011e9adb69..93084079cc 100644
      }
    }
  
-@@ -1506,16 +1510,16 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+@@ -1508,16 +1512,16 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
    EIGEN_IF_CONSTEXPR(mr >= 1 * Traits::LhsProgress) {
      for (Index i = peeled_mc2; i < peeled_mc1; i += LhsProgress) {
        EIGEN_IF_CONSTEXPR(nr >= 8) {
