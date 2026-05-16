@@ -1,0 +1,15 @@
+image: debian:latest
+variables:
+  DEBIAN_FRONTEND: noninteractive
+  GIT_SUBMODULE_STRATEGY: recursive
+stages:
+  - build
+build:
+  stage: build
+  resource_group: $CI_COMMIT_REF_SLUG
+  before_script:
+    - apt-get update && apt-get install -y cmake git g++ libtbb-dev libmpfr-dev libgmp-dev
+  script:
+    - cd eigen && git apply ../parallelize.patch && cd ..
+    - cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+    - cmake --build build --parallel "$(nproc)"
