@@ -12,4 +12,4 @@ build:
   script:
     - cd eigen && git apply ../parallelize.patch && cd ..
     - cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-    - cmake --build build --parallel "$(nproc)"
+    - cmake --build build
