@@ -71,7 +71,8 @@ class PythonInterfaceTest(unittest.TestCase):
     def test_result_helpers_accept_result_object(self):
         result = self.pyvpmr.VPMRResult([2.0 + 0j], [0.5 + 0j])
 
-        self.assertAlmostEqual(result.evaluate(2.0).real, 2.0 * np.exp(-1.0))
+        expected = result.weights[0] * np.exp(-result.poles[0] * 2.0)
+        self.assertAlmostEqual(result.evaluate(2.0).real, expected.real)
         values = result.evaluate(np.array([0.0, 1.0]))
         self.assertEqual(values.shape, (2,))
         self.assertIn("NonviscousNewmark", result.to_global_damping())

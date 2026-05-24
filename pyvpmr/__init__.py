@@ -257,7 +257,7 @@ def to_elemental_damping(result: VPMRResult) -> str:
     command = "# The following can be used as a per-element based nonviscous damping.\n"
     command += "# You may need to modify the first line to change tags.\n"
     command += "# Use the alternative form to apply to multiplier elements.\n"
-    command += "# modifier ElementalNonviscousGroup {unique_modifier_tag} {associated_element_group_tag}"
+    command += "# modifier ElementalNonviscousGroup {unique_modifier_tag} {associated_element_group_tag}\n"
     command += "modifier ElementalNonviscous {unique_modifier_tag} {associated_element_tag}"
 
     for weight, pole in zip(result.weights, result.poles):
