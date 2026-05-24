@@ -49,9 +49,9 @@ class PythonInterfaceTest(unittest.TestCase):
         self.assertIsInstance(result, self.pyvpmr.VPMRResult)
         self.assertTrue(np.array_equal(result.weights, np.array([1 + 0j, 2 + 0j])))
         self.assertTrue(np.array_equal(result.poles, np.array([3 + 0j, 4 + 0j])))
-        weights, poles = result
-        self.assertTrue(np.array_equal(weights, result.m))
-        self.assertTrue(np.array_equal(poles, result.s))
+        unpacked_weights, unpacked_poles = result
+        self.assertTrue(np.array_equal(unpacked_weights, result.m))
+        self.assertTrue(np.array_equal(unpacked_poles, result.s))
 
     def test_duplicate_keyword_aliases_must_match(self):
         with self.assertRaisesRegex(ValueError, "must match"):

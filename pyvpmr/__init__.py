@@ -229,10 +229,15 @@ def _evaluate_kernel(kernel: Callable, x: np.ndarray) -> np.ndarray:
         y_ref = np.asarray(kernel(x), dtype=complex)
         if y_ref.shape == x.shape:
             return y_ref
-    except Exception:
+    except (TypeError, ValueError):
         pass
 
-    return np.asarray([kernel(float(item)) for item in x], dtype=complex)
+    try:
+        return np.asarray([kernel(float(item)) for item in x], dtype=complex)
+    except Exception as exc:
+        raise ValueError(
+            "The kernel function must accept either a NumPy array or scalar float values."
+        ) from exc
 
 
 def plot(
@@ -299,10 +304,10 @@ def plot(
 
     plt.xlim(np.min(x), np.max(x))
     plt.tight_layout(pad=0.05)
-    if save_to:
-        fig.savefig(save_to)
     if show:
         plt.show()
+    if save_to:
+        fig.savefig(save_to)
     return fig, (ax1, ax2)
 
 
