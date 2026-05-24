@@ -15,7 +15,7 @@
 
 import numpy as np
 
-from pyvpmr import vpmr, plot, to_global_damping
+from pyvpmr import vpmr
 
 
 def kernel(x):
@@ -23,6 +23,6 @@ def kernel(x):
 
 
 if __name__ == "__main__":
-    m, s = vpmr(n=60, k="exp(-t^2/4)*t^3", e=1e-12, c=10)
-    print(to_global_damping(m, s))
-    plot(m, s, kernel)
+    result = vpmr(terms=60, kernel="exp(-t^2/4)*t^3", tolerance=1e-12, max_exponent=10)
+    print(result.to_global_damping())
+    result.plot(kernel)

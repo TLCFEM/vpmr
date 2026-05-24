@@ -105,7 +105,7 @@ The execution of the algorithm always requires available `gmp`, `mpfr` and `tbb`
 ```python
 import numpy as np
 
-from pyvpmr import vpmr, plot
+from pyvpmr import vpmr
 
 
 def kernel(x):
@@ -113,8 +113,9 @@ def kernel(x):
 
 
 if __name__ == '__main__':
-    m, s = vpmr(n=50, k='exp(-t^2/4)')
-    plot(m, s, kernel)
+    result = vpmr(terms=50, kernel='exp(-t^2/4)')
+    print(result.weights)
+    result.plot(kernel)
 ```
 
 ### Standalone Binary
