@@ -15,4 +15,4 @@
 
 from pyvpmr import vpmr
 
-print(vpmr(n=20))
+print(vpmr(terms=20))

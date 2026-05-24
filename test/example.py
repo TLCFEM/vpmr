@@ -23,6 +23,11 @@ def kernel(x):
 
 
 if __name__ == "__main__":
-    result = vpmr(terms=60, kernel="exp(-t^2/4)*t^3", tolerance=1e-12, max_exponent=10)
+    result = vpmr(
+        terms=60,
+        kernel="exp(-t^2/4)*t^3",
+        tolerance=1e-12,
+        max_exponent=10,
+    )
     print(result.to_global_damping())
     result.plot(kernel)

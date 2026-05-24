@@ -118,6 +118,10 @@ if __name__ == '__main__':
     result.plot(kernel)
 ```
 
+The Python API uses explicit names only (`terms`, `max_exponent`,
+`precision_bits`, `quadrature_order`, `precision_multiplier`,
+`tolerance`, `kernel`, `omit_trivial_terms`).
+
 ### Standalone Binary
 
 All available options are:

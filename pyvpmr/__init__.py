@@ -8,13 +8,14 @@ import numpy as np
 
 try:
     import _pyvpmr
-except ImportError as exc:  # pragma: no cover - only exercised when the extension is unavailable.
+except ImportError as exc:  # pragma: no cover - only exercised when extension is unavailable.
     _pyvpmr = None
     _PYVPMR_IMPORT_ERROR = exc
 else:
     _PYVPMR_IMPORT_ERROR = None
 
 __all__ = [
+    "VPMROptions",
     "VPMRResult",
     "plot",
     "split",
@@ -32,214 +33,143 @@ def _require_backend() -> None:
         ) from _PYVPMR_IMPORT_ERROR
 
 
-def _coalesce_argument(
-    canonical,
-    alias,
-    *,
-    canonical_name: str,
-    alias_name: str,
-    default,
-):
-    if canonical is not None and alias is not None and canonical != alias:
-        raise ValueError(
-            f"{canonical_name!r} and {alias_name!r} refer to the same option and must match."
+def _ensure_positive_int(name: str, value: int) -> int:
+    if not isinstance(value, int) or value <= 0:
+        raise ValueError(f"{name} must be a positive integer.")
+    return value
+
+
+def _ensure_non_negative_int(name: str, value: int) -> int:
+    if not isinstance(value, int) or value < 0:
+        raise ValueError(f"{name} must be a non-negative integer.")
+    return value
+
+
+def _ensure_positive_float(name: str, value: float) -> float:
+    if not np.isfinite(value) or value <= 0:
+        raise ValueError(f"{name} must be a positive finite number.")
+    return value
+
+
+@dataclass(frozen=True)
+class VPMROptions:
+    """User-facing options for the VPMR algorithm."""
+
+    terms: int = 20
+    max_exponent: int = 4
+    precision_bits: int = 0
+    quadrature_order: int = 500
+    precision_multiplier: float = 1.05
+    tolerance: float = 1e-8
+    kernel: str = ""
+    omit_trivial_terms: bool = True
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "terms", _ensure_positive_int("terms", self.terms))
+        object.__setattr__(
+            self, "max_exponent", _ensure_positive_int("max_exponent", self.max_exponent)
         )
-    if canonical is not None:
-        return canonical
-    if alias is not None:
-        return alias
-    return default
+        object.__setattr__(
+            self,
+            "precision_bits",
+            _ensure_non_negative_int("precision_bits", self.precision_bits),
+        )
+        object.__setattr__(
+            self,
+            "quadrature_order",
+            _ensure_positive_int("quadrature_order", self.quadrature_order),
+        )
+        object.__setattr__(
+            self,
+            "precision_multiplier",
+            _ensure_positive_float("precision_multiplier", self.precision_multiplier),
+        )
+        object.__setattr__(self, "tolerance", _ensure_positive_float("tolerance", self.tolerance))
+        if not isinstance(self.kernel, str):
+            raise ValueError("kernel must be a string expression.")
+        if not isinstance(self.omit_trivial_terms, bool):
+            raise ValueError("omit_trivial_terms must be a boolean.")
 
 
 @dataclass(frozen=True)
 class VPMRResult:
-    """
-    Container returned by :func:`vpmr`.
+    """Result of the VPMR algorithm."""
 
-    The result can still be unpacked as ``m, s = vpmr(...)`` for backwards
-    compatibility, while also exposing named attributes and convenience methods.
-    """
-
-    m: np.ndarray
-    """Approximation weights."""
-    s: np.ndarray
-    """Approximation poles."""
+    weights: np.ndarray
+    poles: np.ndarray
 
     def __post_init__(self) -> None:
-        m = np.atleast_1d(np.asarray(self.m, dtype=complex))
-        s = np.atleast_1d(np.asarray(self.s, dtype=complex))
-        if m.shape != s.shape:
-            raise ValueError("The length of m and s must be the same.")
-        object.__setattr__(self, "m", m)
-        object.__setattr__(self, "s", s)
-
-    @property
-    def weights(self) -> np.ndarray:
-        """Alias for ``m``."""
-        return self.m
-
-    @property
-    def poles(self) -> np.ndarray:
-        """Alias for ``s``."""
-        return self.s
-
-    def as_tuple(self) -> tuple[np.ndarray, np.ndarray]:
-        """Return the legacy ``(m, s)`` tuple."""
-        return self.m, self.s
+        weights = np.atleast_1d(np.asarray(self.weights, dtype=complex))
+        poles = np.atleast_1d(np.asarray(self.poles, dtype=complex))
+        if weights.shape != poles.shape:
+            raise ValueError("weights and poles must have the same shape.")
+        object.__setattr__(self, "weights", weights)
+        object.__setattr__(self, "poles", poles)
 
     def evaluate(self, x: float | np.ndarray) -> complex | np.ndarray:
-        """
-        Evaluate the exponential approximation at one or more time points.
-
-        :param x: Scalar or array of evaluation points.
-        :return: Complex scalar for scalar input, otherwise a complex NumPy array.
-        """
+        """Evaluate the approximation at one or more time points."""
         sample = np.asarray(x, dtype=float)
         if sample.ndim == 0:
-            return np.sum(self.m * np.exp(-self.s * sample)).item()
-        weights = self.m.reshape((-1,) + (1,) * sample.ndim)
-        poles = self.s.reshape((-1,) + (1,) * sample.ndim)
-        values = np.sum(weights * np.exp(-poles * sample), axis=0)
-        return values
+            return np.sum(self.weights * np.exp(-self.poles * sample)).item()
+        weights = self.weights.reshape((-1,) + (1,) * sample.ndim)
+        poles = self.poles.reshape((-1,) + (1,) * sample.ndim)
+        return np.sum(weights * np.exp(-poles * sample), axis=0)
 
     def plot(self, kernel: Callable, **kwargs):
-        """
-        Plot the reference kernel and the approximation.
-
-        Keyword arguments are forwarded to :func:`plot`.
-        :return: The matplotlib figure and axes tuple returned by :func:`plot`.
-        """
+        """Plot the kernel and approximation."""
         return plot(self, kernel, **kwargs)
 
     def to_global_damping(self) -> str:
-        """Format the approximation as a suanPan global damping command."""
+        """Format as a suanPan global nonviscous damping command."""
         return to_global_damping(self)
 
     def to_elemental_damping(self) -> str:
-        """Format the approximation as a suanPan elemental damping command."""
+        """Format as a suanPan elemental nonviscous damping command."""
         return to_elemental_damping(self)
 
-    def __iter__(self):
-        yield self.m
-        yield self.s
 
-    def __len__(self) -> int:
-        return 2
-
-    def __getitem__(self, index: int) -> np.ndarray:
-        return self.as_tuple()[index]
-
-
-def vpmr(
-    *,
-    n: int | None = None,
-    terms: int | None = None,
-    c: int | None = None,
-    max_exponent: int | None = None,
-    d: int | None = None,
-    precision_bits: int | None = None,
-    q: int | None = None,
-    quadrature_order: int | None = None,
-    m: float | None = None,
-    precision_multiplier: float | None = None,
-    e: float | None = None,
-    tolerance: float | None = None,
-    k: str | None = None,
-    kernel: str | None = None,
-    omit: bool | None = None,
-    omit_trivial_terms: bool | None = None,
-) -> VPMRResult:
+def vpmr(options: VPMROptions | None = None, /, **kwargs) -> VPMRResult:
     """
     Run the VPMR algorithm.
 
-    Short option names match the C++ binding. Descriptive aliases are also
-    accepted for better readability:
-
-    ``terms`` → ``n``, ``max_exponent`` → ``c``, ``precision_bits`` → ``d``,
-    ``quadrature_order`` → ``q``, ``precision_multiplier`` → ``m``,
-    ``tolerance`` → ``e``, ``kernel`` → ``k`` and ``omit_trivial_terms`` → ``omit``.
+    Provide either an options object or keyword arguments matching VPMROptions.
     """
     _require_backend()
+    if options is not None and kwargs:
+        raise ValueError("Provide either 'options' or keyword arguments, not both.")
+    if options is None:
+        options = VPMROptions(**kwargs)
+    elif not isinstance(options, VPMROptions):
+        raise TypeError("options must be a VPMROptions instance.")
 
-    options = {
-        "n": _coalesce_argument(
-            n, terms, canonical_name="n", alias_name="terms", default=20
-        ),
-        "c": _coalesce_argument(
-            c,
-            max_exponent,
-            canonical_name="c",
-            alias_name="max_exponent",
-            default=4,
-        ),
-        "d": _coalesce_argument(
-            d,
-            precision_bits,
-            canonical_name="d",
-            alias_name="precision_bits",
-            default=0,
-        ),
-        "q": _coalesce_argument(
-            q,
-            quadrature_order,
-            canonical_name="q",
-            alias_name="quadrature_order",
-            default=500,
-        ),
-        "m": _coalesce_argument(
-            m,
-            precision_multiplier,
-            canonical_name="m",
-            alias_name="precision_multiplier",
-            default=1.05,
-        ),
-        "e": _coalesce_argument(
-            e,
-            tolerance,
-            canonical_name="e",
-            alias_name="tolerance",
-            default=1e-8,
-        ),
-        "k": _coalesce_argument(
-            k,
-            kernel,
-            canonical_name="k",
-            alias_name="kernel",
-            default="",
-        ),
-        "omit": _coalesce_argument(
-            omit,
-            omit_trivial_terms,
-            canonical_name="omit",
-            alias_name="omit_trivial_terms",
-            default=True,
-        ),
-    }
-
-    return VPMRResult(*_pyvpmr.vpmr(**options))
+    raw_weights, raw_poles = _pyvpmr.vpmr(
+        n=options.terms,
+        c=options.max_exponent,
+        d=options.precision_bits,
+        q=options.quadrature_order,
+        m=options.precision_multiplier,
+        e=options.tolerance,
+        k=options.kernel,
+        omit=options.omit_trivial_terms,
+    )
+    return VPMRResult(raw_weights, raw_poles)
 
 
-def split(result: str) -> VPMRResult | None:
-    """
-    Split the standalone VPMR output into a :class:`VPMRResult`.
-
-    :param result: The raw output of the vpmr program.
-    :return: Parsed VPMR result.
-    """
+def split(result: str) -> VPMRResult:
+    """Parse standalone VPMR output text into a VPMRResult."""
     split_r = result.strip().split("\n")
     regex = re.compile(r"([+\-]\d+\.\d+e[+\-]\d+){2}j")
     items = [i for i in split_r if regex.match(i)]
     if len(items) % 2 != 0:
-        print("something wrong with the output")
-        return None
+        raise ValueError("Cannot parse standalone output into paired weights and poles.")
 
-    m_complex = [complex(i) for i in items[: len(items) // 2]]
-    s_complex = [complex(i) for i in items[len(items) // 2 :]]
-    return VPMRResult(m_complex, s_complex)
+    half = len(items) // 2
+    weights = [complex(i) for i in items[:half]]
+    poles = [complex(i) for i in items[half:]]
+    return VPMRResult(weights, poles)
 
 
 def _evaluate_kernel(kernel: Callable, x: np.ndarray) -> np.ndarray:
-    """Evaluate the kernel with vectorized input first, then scalar fallback."""
     try:
         y_ref = np.asarray(kernel(x), dtype=complex)
         if y_ref.shape == x.shape:
@@ -256,9 +186,8 @@ def _evaluate_kernel(kernel: Callable, x: np.ndarray) -> np.ndarray:
 
 
 def plot(
-    m: VPMRResult | list | np.ndarray,
-    s: list | np.ndarray | Callable | None = None,
-    kernel: Callable | None = None,
+    result: VPMRResult,
+    kernel: Callable,
     *,
     size: tuple[float, float] = (6, 4),
     xlim: tuple[float, float] = (0, 10),
@@ -266,32 +195,12 @@ def plot(
     save_to: str | None = None,
 ):
     """
-    Plot the kernel function and the approximation.
+    Plot kernel reference and approximation for a VPMRResult.
 
-    Accepts either ``plot(result, kernel, ...)`` or ``plot(m, s, kernel, ...)``.
-    Returns the created figure and axes tuple. The plotted reference and
-    approximation curves use the real parts of the evaluated values.
+    The rendered lines use the real parts of the evaluated values.
     """
-    if isinstance(m, VPMRResult):
-        result = m
-        if kernel is None and callable(s):
-            kernel = s
-            s = None
-        elif s is not None and not callable(s):
-            raise ValueError(
-                "When the first argument is a VPMRResult, provide the kernel as the "
-                "second positional argument or as the 'kernel' keyword argument."
-            )
-    else:
-        if s is None or callable(s):
-            raise ValueError(
-                "Both m and s arrays must be provided when not using a VPMRResult. "
-                "If passing a VPMRResult, use plot(result, kernel)."
-            )
-        result = VPMRResult(*_process_args(m, s))
-
-    if kernel is None:
-        raise ValueError("A kernel function is required.")
+    if not isinstance(result, VPMRResult):
+        raise TypeError("plot expects a VPMRResult instance as the first argument.")
 
     from matplotlib import pyplot as plt
 
@@ -300,17 +209,9 @@ def plot(
     y = result.evaluate(x)
 
     fig = plt.figure(figsize=size)
-
     ax1 = plt.gca()
     ax1.plot(x, y_ref.real, "b-", label="kernel", linewidth=2)
-    ax1.plot(
-        x,
-        y.real,
-        "r",
-        linestyle="dashdot",
-        label="approximation",
-        linewidth=3,
-    )
+    ax1.plot(x, y.real, "r", linestyle="dashdot", label="approximation", linewidth=3)
     ax1.set_xlabel("time $t$ [s]")
     ax1.set_ylabel("kernel function $g(t)$")
     ax1.legend(loc="upper right", handlelength=4)
@@ -330,59 +231,39 @@ def plot(
     return fig, (ax1, ax2)
 
 
-def _process_args(*args) -> tuple[np.ndarray, np.ndarray]:
-    if len(args) == 1:
-        if isinstance(args[0], VPMRResult):
-            return args[0].as_tuple()
-        if len(args[0]) != 2:
-            raise ValueError("Expected a two-item result tuple.")
-        m, s = args[0]
-    elif len(args) == 2:
-        m, s = args
-    else:
-        raise ValueError("Wrong number of arguments.")
+def to_global_damping(result: VPMRResult) -> str:
+    """Generate a suanPan global nonviscous damping command."""
+    if not isinstance(result, VPMRResult):
+        raise TypeError("to_global_damping expects a VPMRResult instance.")
 
-    result = VPMRResult(m, s)
-    return result.as_tuple()
-
-
-def to_global_damping(*args):
-    """
-    Generate a command to use the kernel as a global nonviscous damping model in suanPan.
-
-    :param args: A result object, a ``(m, s)`` tuple, or separate ``m`` and ``s`` arrays.
-    :return: The command.
-    """
     command = "# The following can be used as a global nonviscous damping with the Newmark time integration.\n"
     command += "# You may need to modify the first line to change tag and integration parameters.\n"
     command += "integrator NonviscousNewmark 1 .25 .5"
 
-    for m, s in zip(*_process_args(*args)):
-        command += f" \\\n{m.real:+.15e} {m.imag:+.15e} {s.real:+.15e} {s.imag:+.15e}"
-
+    for weight, pole in zip(result.weights, result.poles):
+        command += (
+            f" \\\n{weight.real:+.15e} {weight.imag:+.15e} "
+            f"{pole.real:+.15e} {pole.imag:+.15e}"
+        )
     command += "\n"
-
     return command
 
 
-def to_elemental_damping(*args):
-    """
-    Generate a command to use the kernel as a per-element nonviscous damping model in suanPan.
+def to_elemental_damping(result: VPMRResult) -> str:
+    """Generate a suanPan elemental nonviscous damping command."""
+    if not isinstance(result, VPMRResult):
+        raise TypeError("to_elemental_damping expects a VPMRResult instance.")
 
-    :param args: A result object, a ``(m, s)`` tuple, or separate ``m`` and ``s`` arrays.
-    :return: The command.
-    """
     command = "# The following can be used as a per-element based nonviscous damping.\n"
     command += "# You may need to modify the first line to change tags.\n"
     command += "# Use the alternative form to apply to multiplier elements.\n"
     command += "# modifier ElementalNonviscousGroup {unique_modifier_tag} {associated_element_group_tag}"
-    command += (
-        "modifier ElementalNonviscous {unique_modifier_tag} {associated_element_tag}"
-    )
+    command += "modifier ElementalNonviscous {unique_modifier_tag} {associated_element_tag}"
 
-    for m, s in zip(*_process_args(*args)):
-        command += f" \\\n{m.real:+.15e} {m.imag:+.15e} {s.real:+.15e} {s.imag:+.15e}"
-
+    for weight, pole in zip(result.weights, result.poles):
+        command += (
+            f" \\\n{weight.real:+.15e} {weight.imag:+.15e} "
+            f"{pole.real:+.15e} {pole.imag:+.15e}"
+        )
     command += "\n"
-
     return command
