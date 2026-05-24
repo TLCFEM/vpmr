@@ -50,8 +50,8 @@ class PythonInterfaceTest(unittest.TestCase):
         self.assertTrue(np.array_equal(result.weights, np.array([1 + 0j, 2 + 0j])))
         self.assertTrue(np.array_equal(result.poles, np.array([3 + 0j, 4 + 0j])))
         weights_from_unpack, poles_from_unpack = result
-        self.assertTrue(np.array_equal(weights_from_unpack, result.m))
-        self.assertTrue(np.array_equal(poles_from_unpack, result.s))
+        self.assertTrue(np.array_equal(weights_from_unpack, result.weights))
+        self.assertTrue(np.array_equal(poles_from_unpack, result.poles))
 
     def test_duplicate_keyword_aliases_must_match(self):
         with self.assertRaisesRegex(ValueError, "must match"):

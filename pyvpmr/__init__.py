@@ -8,7 +8,7 @@ import numpy as np
 
 try:
     import _pyvpmr
-except ImportError as exc:  # pragma: no cover - exercised where the extension is unavailable.
+except ImportError as exc:  # pragma: no cover - only exercised when the extension is unavailable.
     _pyvpmr = None
     _PYVPMR_IMPORT_ERROR = exc
 else:
@@ -235,7 +235,7 @@ def _evaluate_kernel(kernel: Callable, x: np.ndarray) -> np.ndarray:
         pass
 
     try:
-        return np.asarray([kernel(float(item)) for item in x], dtype=complex)
+        return np.asarray(np.vectorize(kernel, otypes=[complex])(x), dtype=complex)
     except (TypeError, ValueError) as exc:
         raise ValueError(
             "The kernel function must accept either a NumPy array or scalar float values."
