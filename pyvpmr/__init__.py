@@ -8,7 +8,7 @@ import numpy as np
 
 try:
     import _pyvpmr
-except ImportError as exc:  # pragma: no cover - exercised in environments without the extension.
+except ImportError as exc:  # pragma: no cover - exercised where the extension is unavailable.
     _pyvpmr = None
     _PYVPMR_IMPORT_ERROR = exc
 else:
@@ -88,10 +88,12 @@ class VPMRResult:
     def evaluate(self, x: float | np.ndarray) -> complex | np.ndarray:
         """Evaluate the exponential approximation at one or more points."""
         sample = np.asarray(x, dtype=float)
+        if sample.ndim == 0:
+            return np.sum(self.m * np.exp(-self.s * sample)).item()
         weights = self.m.reshape((-1,) + (1,) * sample.ndim)
         poles = self.s.reshape((-1,) + (1,) * sample.ndim)
         values = np.sum(weights * np.exp(-poles * sample), axis=0)
-        return values.item() if sample.ndim == 0 else values
+        return values
 
     def plot(self, kernel: Callable, **kwargs):
         """Plot the reference kernel and the approximation."""
@@ -234,7 +236,7 @@ def _evaluate_kernel(kernel: Callable, x: np.ndarray) -> np.ndarray:
 
     try:
         return np.asarray([kernel(float(item)) for item in x], dtype=complex)
-    except Exception as exc:
+    except (TypeError, ValueError) as exc:
         raise ValueError(
             "The kernel function must accept either a NumPy array or scalar float values."
         ) from exc
