@@ -263,14 +263,17 @@ def plot(
         if kernel is None and callable(s):
             kernel = s
             s = None
-        elif s is not None:
+        elif s is not None and not callable(s):
             raise ValueError(
                 "When the first argument is a VPMRResult, provide the kernel as the "
                 "second positional argument or as the 'kernel' keyword argument."
             )
     else:
         if s is None or callable(s):
-            raise ValueError("Both m and s must be provided unless a VPMRResult is used.")
+            raise ValueError(
+                "Both m and s arrays must be provided when not using a VPMRResult. "
+                "If passing a VPMRResult, use plot(result, kernel)."
+            )
         result = VPMRResult(*_process_args(m, s))
 
     if kernel is None:
@@ -317,7 +320,7 @@ def _process_args(*args) -> tuple[np.ndarray, np.ndarray]:
     if len(args) == 1:
         if isinstance(args[0], VPMRResult):
             return args[0].as_tuple()
-        if 2 != len(args[0]):
+        if len(args[0]) != 2:
             raise ValueError("Expected a two-item result tuple.")
         m, s = args[0]
     elif len(args) == 2:
