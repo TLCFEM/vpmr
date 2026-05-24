@@ -61,7 +61,9 @@ class VPMRResult:
     """
 
     m: np.ndarray
+    """Approximation weights."""
     s: np.ndarray
+    """Approximation poles."""
 
     def __post_init__(self) -> None:
         m = np.atleast_1d(np.asarray(self.m, dtype=complex))
@@ -86,7 +88,12 @@ class VPMRResult:
         return self.m, self.s
 
     def evaluate(self, x: float | np.ndarray) -> complex | np.ndarray:
-        """Evaluate the exponential approximation at one or more points."""
+        """
+        Evaluate the exponential approximation at one or more time points.
+
+        :param x: Scalar or array of evaluation points.
+        :return: Complex scalar for scalar input, otherwise a complex NumPy array.
+        """
         sample = np.asarray(x, dtype=float)
         if sample.ndim == 0:
             return np.sum(self.m * np.exp(-self.s * sample)).item()
@@ -96,7 +103,12 @@ class VPMRResult:
         return values
 
     def plot(self, kernel: Callable, **kwargs):
-        """Plot the reference kernel and the approximation."""
+        """
+        Plot the reference kernel and the approximation.
+
+        Keyword arguments are forwarded to :func:`plot`.
+        :return: The matplotlib figure and axes tuple returned by :func:`plot`.
+        """
         return plot(self, kernel, **kwargs)
 
     def to_global_damping(self) -> str:
@@ -227,6 +239,7 @@ def split(result: str) -> VPMRResult | None:
 
 
 def _evaluate_kernel(kernel: Callable, x: np.ndarray) -> np.ndarray:
+    """Evaluate the kernel with vectorized input first, then scalar fallback."""
     try:
         y_ref = np.asarray(kernel(x), dtype=complex)
         if y_ref.shape == x.shape:
@@ -256,7 +269,8 @@ def plot(
     Plot the kernel function and the approximation.
 
     Accepts either ``plot(result, kernel, ...)`` or ``plot(m, s, kernel, ...)``.
-    Returns the created figure and axes tuple.
+    Returns the created figure and axes tuple. The plotted reference and
+    approximation curves use the real parts of the evaluated values.
     """
     if isinstance(m, VPMRResult):
         result = m
