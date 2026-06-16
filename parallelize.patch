@@ -1,5 +1,5 @@
 diff --git a/Eigen/src/Core/products/GeneralBlockPanelKernel.h b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-index 023f8f574e..4425f3f2dd 100644
+index 023f8f574..4425f3f2d 100644
 --- a/Eigen/src/Core/products/GeneralBlockPanelKernel.h
 +++ b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
 @@ -1500,22 +1500,24 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
@@ -89,7 +89,7 @@ index 023f8f574e..4425f3f2dd 100644
    }
  
 diff --git a/Eigen/src/Core/products/GeneralMatrixVector.h b/Eigen/src/Core/products/GeneralMatrixVector.h
-index 2c972382c1..d2b07ea64c 100644
+index 2c972382c..d2b07ea64 100644
 --- a/Eigen/src/Core/products/GeneralMatrixVector.h
 +++ b/Eigen/src/Core/products/GeneralMatrixVector.h
 @@ -225,7 +225,21 @@ general_matrix_vector_product<Index, LhsScalar, LhsMapper, ColMajor, ConjugateLh
@@ -116,7 +116,7 @@ index 2c972382c1..d2b07ea64c 100644
        process_rows<4>(i, j2, jend, lhs, rhs, res, palpha, pcj);
        i += ResPacketSize * 4;
 diff --git a/Eigen/src/SVD/BDCSVDImpl.h b/Eigen/src/SVD/BDCSVDImpl.h
-index ad22e75e4e..1e6cf74cef 100644
+index ad22e75e4..1e6cf74ce 100644
 --- a/Eigen/src/SVD/BDCSVDImpl.h
 +++ b/Eigen/src/SVD/BDCSVDImpl.h
 @@ -371,6 +371,16 @@ typename bdcsvd_impl<RealScalar_>::RealScalar bdcsvd_impl<RealScalar_>::secularE
