@@ -1,8 +1,8 @@
 diff --git a/Eigen/src/Core/products/GeneralBlockPanelKernel.h b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-index 922cbf92e..869a76077 100644
+index 84ca39b38..c8a6b5122 100644
 --- a/Eigen/src/Core/products/GeneralBlockPanelKernel.h
 +++ b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-@@ -1500,22 +1500,24 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+@@ -1504,22 +1504,24 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
      for (Index i1 = 0; i1 < peeled_mc3; i1 += actual_panel_rows) {
        const Index actual_panel_end = (std::min)(i1 + actual_panel_rows, peeled_mc3);
        EIGEN_IF_CONSTEXPR (nr >= 8) {
@@ -33,7 +33,7 @@ index 922cbf92e..869a76077 100644
      }
    }
  
-@@ -1531,22 +1533,24 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+@@ -1535,22 +1537,24 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
      for (Index i1 = peeled_mc3; i1 < peeled_mc2; i1 += actual_panel_rows) {
        Index actual_panel_end = (std::min)(i1 + actual_panel_rows, peeled_mc2);
        EIGEN_IF_CONSTEXPR (nr >= 8) {
@@ -64,7 +64,7 @@ index 922cbf92e..869a76077 100644
      }
    }
  
-@@ -1554,16 +1558,16 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+@@ -1558,16 +1562,16 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
    EIGEN_IF_CONSTEXPR (mr >= 1 * Traits::LhsProgress) {
      for (Index i = peeled_mc2; i < peeled_mc1; i += LhsProgress) {
        EIGEN_IF_CONSTEXPR (nr >= 8) {
@@ -89,7 +89,7 @@ index 922cbf92e..869a76077 100644
    }
  
 diff --git a/Eigen/src/Core/products/GeneralMatrixVector.h b/Eigen/src/Core/products/GeneralMatrixVector.h
-index 2c972382c..d2b07ea64 100644
+index 2af8d67d6..e141d79b5 100644
 --- a/Eigen/src/Core/products/GeneralMatrixVector.h
 +++ b/Eigen/src/Core/products/GeneralMatrixVector.h
 @@ -225,7 +225,21 @@ general_matrix_vector_product<Index, LhsScalar, LhsMapper, ColMajor, ConjugateLh
