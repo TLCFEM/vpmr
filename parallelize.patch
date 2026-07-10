@@ -116,10 +116,10 @@ index 2af8d67d6..e141d79b5 100644
        process_rows<4>(i, j2, jend, lhs, rhs, res, palpha, pcj);
        i += ResPacketSize * 4;
 diff --git a/Eigen/src/SVD/BDCSVDImpl.h b/Eigen/src/SVD/BDCSVDImpl.h
-index dd50a6806..e8b93b9a3 100644
+index 086cbb188..cf33f6885 100644
 --- a/Eigen/src/SVD/BDCSVDImpl.h
 +++ b/Eigen/src/SVD/BDCSVDImpl.h
-@@ -371,6 +371,16 @@ typename bdcsvd_impl<RealScalar_>::RealScalar bdcsvd_impl<RealScalar_>::secularE
+@@ -382,6 +382,16 @@ typename bdcsvd_impl<RealScalar_>::RealScalar bdcsvd_impl<RealScalar_>::secularE
                                                                                    const IndicesRef& perm,
                                                                                    const ArrayRef& diagShifted,
                                                                                    RealScalar shift) {
@@ -136,7 +136,7 @@ index dd50a6806..e8b93b9a3 100644
    Index m = perm.size();
    RealScalar res = Literal(1);
    for (Index i = 0; i < m; ++i) {
-@@ -606,6 +616,8 @@ template <typename RealScalar_>
+@@ -622,6 +632,8 @@ template <typename RealScalar_>
  void bdcsvd_impl<RealScalar_>::computeSingVecs(const ArrayRef& zhat, const ArrayRef& diag, const IndicesRef& perm,
                                                 const VectorType& singVals, const ArrayRef& shifts, const ArrayRef& mus,
                                                 MatrixXr& U, MatrixXr& V) {
@@ -145,10 +145,10 @@ index dd50a6806..e8b93b9a3 100644
    Index n = zhat.size();
    Index m = perm.size();
  
-@@ -615,27 +627,33 @@ void bdcsvd_impl<RealScalar_>::computeSingVecs(const ArrayRef& zhat, const Array
-       if (m_compV) V.col(k) = VectorType::Unit(n, k);
+@@ -632,15 +644,18 @@ void bdcsvd_impl<RealScalar_>::computeSingVecs(const ArrayRef& zhat, const Array
      } else {
        U.col(k).setZero();
+       if (m_compV) V.col(k).setZero();
 -      for (Index l = 0; l < m; ++l) {
 -        Index i = perm(l);
 -        RealScalar diff = diag(i) - shifts(k);
@@ -156,6 +156,7 @@ index dd50a6806..e8b93b9a3 100644
 -        diff -= mus(k);
 -        EIGEN_OPTIMIZATION_BARRIER(diff)
 -        U(i, k) = zhat(i) / diff / ((diag(i) + singVals[k]));
+-        if (m_compV && l > 0) V(i, k) = diag(i) * zhat(i) / diff / ((diag(i) + singVals[k]));
 -      }
 +      tbb::parallel_for(
 +          Index(0), m,
@@ -166,32 +167,9 @@ index dd50a6806..e8b93b9a3 100644
 +            diff -= mus(k);
 +            EIGEN_OPTIMIZATION_BARRIER(diff)
 +            U(i, k) = zhat(i) / diff / ((diag(i) + singVals[k]));
++            if (m_compV && l > 0) V(i, k) = diag(i) * zhat(i) / diff / ((diag(i) + singVals[k]));
 +          },
 +          ap);
        U(n, k) = Literal(0);
-       U.col(k).normalize();
- 
-       if (m_compV) {
-         V.col(k).setZero();
--        for (Index l = 1; l < m; ++l) {
--          Index i = perm(l);
--          RealScalar diff = diag(i) - shifts(k);
--          EIGEN_OPTIMIZATION_BARRIER(diff)
--          diff -= mus(k);
--          EIGEN_OPTIMIZATION_BARRIER(diff)
--          V(i, k) = diag(i) * zhat(i) / diff / ((diag(i) + singVals[k]));
--        }
-+        tbb::parallel_for(
-+            Index(1), m,
-+            [&](const Index l) {
-+              Index i = perm(l);
-+              RealScalar diff = diag(i) - shifts(k);
-+              EIGEN_OPTIMIZATION_BARRIER(diff)
-+              diff -= mus(k);
-+              EIGEN_OPTIMIZATION_BARRIER(diff)
-+              V(i, k) = diag(i) * zhat(i) / diff / ((diag(i) + singVals[k]));
-+            },
-+            ap);
-         V(0, k) = Literal(-1);
-         V.col(k).normalize();
-       }
+       // LAPACK's xLASD3 normalizes these vectors with xNRM2. Use the scaled
+       // normalization unconditionally: under -ffast-math, compilers may
