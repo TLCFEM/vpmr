@@ -1,8 +1,8 @@
 diff --git a/Eigen/src/Core/products/GeneralBlockPanelKernel.h b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-index 90b92bf22..099b1b2a6 100644
+index 1d3f8c583..cf81ce4c8 100644
 --- a/Eigen/src/Core/products/GeneralBlockPanelKernel.h
 +++ b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-@@ -1529,22 +1529,24 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+@@ -1525,22 +1525,24 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
      for (Index i1 = 0; i1 < peeled_mc3; i1 += actual_panel_rows) {
        const Index actual_panel_end = (std::min)(i1 + actual_panel_rows, peeled_mc3);
        EIGEN_IF_CONSTEXPR (nr >= 8) {
@@ -33,7 +33,7 @@ index 90b92bf22..099b1b2a6 100644
      }
    }
  
-@@ -1560,22 +1562,24 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+@@ -1556,22 +1558,24 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
      for (Index i1 = peeled_mc3; i1 < peeled_mc2; i1 += actual_panel_rows) {
        Index actual_panel_end = (std::min)(i1 + actual_panel_rows, peeled_mc2);
        EIGEN_IF_CONSTEXPR (nr >= 8) {
@@ -64,7 +64,7 @@ index 90b92bf22..099b1b2a6 100644
      }
    }
  
-@@ -1583,16 +1587,16 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+@@ -1579,16 +1583,16 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
    EIGEN_IF_CONSTEXPR (mr >= 1 * Traits::LhsProgress) {
      for (Index i = peeled_mc2; i < peeled_mc1; i += LhsProgress) {
        EIGEN_IF_CONSTEXPR (nr >= 8) {
@@ -89,7 +89,7 @@ index 90b92bf22..099b1b2a6 100644
    }
  
 diff --git a/Eigen/src/Core/products/GeneralMatrixVector.h b/Eigen/src/Core/products/GeneralMatrixVector.h
-index 2af8d67d6..e141d79b5 100644
+index ef8bc0fd8..c2b5ef6d9 100644
 --- a/Eigen/src/Core/products/GeneralMatrixVector.h
 +++ b/Eigen/src/Core/products/GeneralMatrixVector.h
 @@ -225,7 +225,21 @@ general_matrix_vector_product<Index, LhsScalar, LhsMapper, ColMajor, ConjugateLh
@@ -116,7 +116,7 @@ index 2af8d67d6..e141d79b5 100644
        process_rows<4>(i, j2, jend, lhs, rhs, res, palpha, pcj);
        i += ResPacketSize * 4;
 diff --git a/Eigen/src/SVD/BDCSVDImpl.h b/Eigen/src/SVD/BDCSVDImpl.h
-index 086cbb188..cf33f6885 100644
+index aa191042b..6363c97ab 100644
 --- a/Eigen/src/SVD/BDCSVDImpl.h
 +++ b/Eigen/src/SVD/BDCSVDImpl.h
 @@ -382,6 +382,16 @@ typename bdcsvd_impl<RealScalar_>::RealScalar bdcsvd_impl<RealScalar_>::secularE
