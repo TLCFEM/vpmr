@@ -1,8 +1,8 @@
 diff --git a/Eigen/src/Core/products/GeneralBlockPanelKernel.h b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-index 1d3f8c583..cf81ce4c8 100644
+index 30de6108a..5aaaaf7f2 100644
 --- a/Eigen/src/Core/products/GeneralBlockPanelKernel.h
 +++ b/Eigen/src/Core/products/GeneralBlockPanelKernel.h
-@@ -1525,22 +1525,24 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+@@ -1541,22 +1541,24 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
      for (Index i1 = 0; i1 < peeled_mc3; i1 += actual_panel_rows) {
        const Index actual_panel_end = (std::min)(i1 + actual_panel_rows, peeled_mc3);
        EIGEN_IF_CONSTEXPR (nr >= 8) {
@@ -33,7 +33,7 @@ index 1d3f8c583..cf81ce4c8 100644
      }
    }
  
-@@ -1556,22 +1558,24 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+@@ -1572,22 +1574,24 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
      for (Index i1 = peeled_mc3; i1 < peeled_mc2; i1 += actual_panel_rows) {
        Index actual_panel_end = (std::min)(i1 + actual_panel_rows, peeled_mc2);
        EIGEN_IF_CONSTEXPR (nr >= 8) {
@@ -64,7 +64,7 @@ index 1d3f8c583..cf81ce4c8 100644
      }
    }
  
-@@ -1579,16 +1583,16 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
+@@ -1595,16 +1599,16 @@ EIGEN_DONT_INLINE void gebp_kernel<LhsScalar, RhsScalar, Index, DataMapper, mr,
    EIGEN_IF_CONSTEXPR (mr >= 1 * Traits::LhsProgress) {
      for (Index i = peeled_mc2; i < peeled_mc1; i += LhsProgress) {
        EIGEN_IF_CONSTEXPR (nr >= 8) {
@@ -116,10 +116,10 @@ index ef8bc0fd8..c2b5ef6d9 100644
        process_rows<4>(i, j2, jend, lhs, rhs, res, palpha, pcj);
        i += ResPacketSize * 4;
 diff --git a/Eigen/src/SVD/BDCSVDImpl.h b/Eigen/src/SVD/BDCSVDImpl.h
-index aa191042b..6363c97ab 100644
+index 2a36ddb98..716c2ff43 100644
 --- a/Eigen/src/SVD/BDCSVDImpl.h
 +++ b/Eigen/src/SVD/BDCSVDImpl.h
-@@ -382,6 +382,16 @@ typename bdcsvd_impl<RealScalar_>::RealScalar bdcsvd_impl<RealScalar_>::secularE
+@@ -403,6 +403,16 @@ typename bdcsvd_impl<RealScalar_>::RealScalar bdcsvd_impl<RealScalar_>::secularE
                                                                                    const IndicesRef& perm,
                                                                                    const ArrayRef& diagShifted,
                                                                                    RealScalar shift) {
@@ -136,7 +136,7 @@ index aa191042b..6363c97ab 100644
    Index m = perm.size();
    RealScalar res = Literal(1);
    for (Index i = 0; i < m; ++i) {
-@@ -622,6 +632,8 @@ template <typename RealScalar_>
+@@ -643,6 +653,8 @@ template <typename RealScalar_>
  void bdcsvd_impl<RealScalar_>::computeSingVecs(const ArrayRef& zhat, const ArrayRef& diag, const IndicesRef& perm,
                                                 const VectorType& singVals, const ArrayRef& shifts, const ArrayRef& mus,
                                                 MatrixXr& U, MatrixXr& V) {
@@ -145,7 +145,7 @@ index aa191042b..6363c97ab 100644
    Index n = zhat.size();
    Index m = perm.size();
  
-@@ -632,15 +644,18 @@ void bdcsvd_impl<RealScalar_>::computeSingVecs(const ArrayRef& zhat, const Array
+@@ -653,15 +665,18 @@ void bdcsvd_impl<RealScalar_>::computeSingVecs(const ArrayRef& zhat, const Array
      } else {
        U.col(k).setZero();
        if (m_compV) V.col(k).setZero();
