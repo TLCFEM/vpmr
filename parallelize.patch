@@ -116,27 +116,25 @@ index ef8bc0fd8..c2b5ef6d9 100644
        process_rows<4>(i, j2, jend, lhs, rhs, res, palpha, pcj);
        i += ResPacketSize * 4;
 diff --git a/Eigen/src/SVD/BDCSVDImpl.h b/Eigen/src/SVD/BDCSVDImpl.h
-index 995b4cac8..901367f29 100644
+index 995b4cac8..98251ff97 100644
 --- a/Eigen/src/SVD/BDCSVDImpl.h
 +++ b/Eigen/src/SVD/BDCSVDImpl.h
-@@ -434,6 +434,16 @@ typename bdcsvd_impl<RealScalar_>::RealScalar bdcsvd_impl<RealScalar_>::secularE
+@@ -434,6 +434,14 @@ typename bdcsvd_impl<RealScalar_>::RealScalar bdcsvd_impl<RealScalar_>::secularE
                                                                                    const ConstArrayRef& diag,
                                                                                    const ConstArrayRef& diagShifted,
                                                                                    RealScalar shift) {
 +  return tbb::parallel_deterministic_reduce(
 +      tbb::blocked_range<Index>(Index(0), col0.size()), RealScalar(1),
 +      [&](const tbb::blocked_range<Index>& r, RealScalar running_total) {
-+        for (auto i = r.begin(); i < r.end(); ++i) {
-+          const Index j = col0(i);
-+          running_total += productOfQuotients(j, diagShifted(i) - mu, j, diag(i) + shift + mu);
-+        }
++        for (auto i = r.begin(); i < r.end(); ++i)
++          running_total += productOfQuotients(col0(i), diagShifted(i) - mu, col0(i), diag(i) + shift + mu);
 +        return running_total;
 +      },
 +      std::plus<>());
    RealScalar res = Literal(1);
    for (Index i = 0; i < col0.size(); ++i) {
      res += productOfQuotients(col0(i), diagShifted(i) - mu, col0(i), diag(i) + shift + mu);
-@@ -688,6 +698,8 @@ template <typename RealScalar_>
+@@ -688,6 +696,8 @@ template <typename RealScalar_>
  void bdcsvd_impl<RealScalar_>::computeSingVecs(const ArrayRef& zhat, const ArrayRef& diag, const IndicesRef& perm,
                                                 const VectorType& singVals, const ArrayRef& shifts, const ArrayRef& mus,
                                                 MatrixXr& U, MatrixXr& V) {
@@ -145,7 +143,7 @@ index 995b4cac8..901367f29 100644
    Index n = zhat.size();
    Index m = perm.size();
  
-@@ -701,18 +713,21 @@ void bdcsvd_impl<RealScalar_>::computeSingVecs(const ArrayRef& zhat, const Array
+@@ -701,18 +711,21 @@ void bdcsvd_impl<RealScalar_>::computeSingVecs(const ArrayRef& zhat, const Array
        const RealScalar shift = shifts(k);
        const RealScalar mu = mus(k);
        const RealScalar singularValue = singVals(k);
