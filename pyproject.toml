@@ -1,25 +1,8 @@
 [build-system]
-requires = [
-    "setuptools",
-    "pybind11",
-    "wheel",
-]
 build-backend = "setuptools.build_meta"
+requires = ["setuptools", "pybind11", "wheel"]
 
 [project]
-dynamic = [
-    "readme",
-]
-name = "pyvpmr"
-version = "000000"
-description = "The VPMR Algorithm"
-requires-python = ">=3.8"
-license = { file = "LICENSE" }
-keywords = [
-    "vpmr",
-    "kernel function",
-    "convolution",
-]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Education",
@@ -33,18 +16,30 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
-    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3 :: Only"
 ]
-dependencies = [
-    "numpy",
-    "matplotlib",
-]
-authors = [{ name = "Theodore Chang", email = "tlcfem@gmail.com" }]
-maintainers = [{ name = "Theodore Chang", email = "tlcfem@gmail.com" }]
+dependencies = ["numpy", "matplotlib"]
+description = "The VPMR Algorithm"
+dynamic = ["readme"]
+keywords = ["vpmr", "kernel function", "convolution"]
+name = "pyvpmr"
+requires-python = ">=3.8"
+version = "000000"
+
+[[project.authors]]
+name = "Theodore Chang"
+email = "tlcfem@gmail.com"
+
+[project.license]
+file = "LICENSE"
+
+[[project.maintainers]]
+name = "Theodore Chang"
+email = "tlcfem@gmail.com"
 
 [project.urls]
-Homepage = "https://github.com/TLCFEM/vpmr"
 "Bug Reports" = "https://github.com/TLCFEM/vpmr/issuess"
+Homepage = "https://github.com/TLCFEM/vpmr"
 Source = "https://github.com/TLCFEM/vpmr"
 
 [tool.cibuildwheel]
