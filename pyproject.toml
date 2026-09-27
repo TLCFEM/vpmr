@@ -9,9 +9,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -22,16 +19,15 @@ dependencies = ["numpy", "matplotlib"]
 description = "The VPMR Algorithm"
 dynamic = ["readme"]
 keywords = ["vpmr", "kernel function", "convolution"]
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 name = "pyvpmr"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 version = "000000"
 
 [[project.authors]]
 name = "Theodore Chang"
 email = "tlcfem@gmail.com"
-
-[project.license]
-file = "LICENSE"
 
 [[project.maintainers]]
 name = "Theodore Chang"
