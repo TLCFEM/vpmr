@@ -89,10 +89,10 @@ index 0a4bec372..377790cff 100644
    }
  
 diff --git a/Eigen/src/Core/products/GeneralMatrixVector.h b/Eigen/src/Core/products/GeneralMatrixVector.h
-index ef8bc0fd8..c2b5ef6d9 100644
+index 040c5d5dc..daa550493 100644
 --- a/Eigen/src/Core/products/GeneralMatrixVector.h
 +++ b/Eigen/src/Core/products/GeneralMatrixVector.h
-@@ -225,7 +225,21 @@ general_matrix_vector_product<Index, LhsScalar, LhsMapper, ColMajor, ConjugateLh
+@@ -335,7 +335,21 @@ general_matrix_vector_product<Index, LhsScalar, LhsMapper, ColMajor, ConjugateLh
    for (Index j2 = 0; j2 < cols; j2 += block_cols) {
      Index jend = numext::mini(j2 + block_cols, cols);
      Index i = 0;
@@ -112,9 +112,9 @@ index ef8bc0fd8..c2b5ef6d9 100644
 +                                        std::plus<>()),
 +                                    palpha, ploadu<ResPacket>(res + offset)));
 +      }
-     if (i < n4) {
-       process_rows<4>(i, j2, jend, lhs, rhs, res, palpha, pcj);
-       i += ResPacketSize * 4;
+     if (count > 0) {
+       process_segment_tail(bool_constant<UseSegment>(), Index(UnsignedIndex(rows - i) / ResPacketSize), i, j2, jend,
+                            lhs, rhs, res, palpha, pcj, count);
 diff --git a/Eigen/src/SVD/BDCSVDImpl.h b/Eigen/src/SVD/BDCSVDImpl.h
 index 995b4cac8..98251ff97 100644
 --- a/Eigen/src/SVD/BDCSVDImpl.h
