@@ -116,7 +116,7 @@ index 040c5d5dc..daa550493 100644
        process_segment_tail(bool_constant<UseSegment>(), Index(UnsignedIndex(rows - i) / ResPacketSize), i, j2, jend,
                             lhs, rhs, res, palpha, pcj, count);
 diff --git a/Eigen/src/SVD/BDCSVDImpl.h b/Eigen/src/SVD/BDCSVDImpl.h
-index 995b4cac8..98251ff97 100644
+index 5f0a7b714..d91e2acd7 100644
 --- a/Eigen/src/SVD/BDCSVDImpl.h
 +++ b/Eigen/src/SVD/BDCSVDImpl.h
 @@ -434,6 +434,14 @@ typename bdcsvd_impl<RealScalar_>::RealScalar bdcsvd_impl<RealScalar_>::secularE
