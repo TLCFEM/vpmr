@@ -17,9 +17,11 @@
 
 #include <gmpxx.h>
 #include <iomanip>
+#include <memory>
 #include <mpfr/exprtk_mpfr_adaptor.hpp>
 #include <mutex>
 #include <numeric>
+#include <stdexcept>
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_reduce.h>
@@ -35,6 +37,7 @@ struct Config {
     bool print_weight = false;
     bool print_singular_value = false;
     bool omit_trivial_terms = true;
+    bool verbose = true;
     int max_terms = 20;
     int max_exponent = 4;
     int precision_bits = 512;
@@ -44,6 +47,8 @@ struct Config {
     std::string kernel = "exp(-t*t/4)";
 
     void print() const {
+        if(!verbose) return;
+
         std::cout << std::scientific << std::setprecision(4);
 
         std::cout << "Using the following parameters:\n";
@@ -197,24 +202,30 @@ big_int comb_impl(unsigned n, unsigned k) {
 class Expression {
     mpreal time;
 
-    exprtk::symbol_table<mpreal> symbol_table;
-    exprtk::expression<mpreal> expression;
-    exprtk::parser<mpreal> parser;
+    // The expression owns references to the symbol table. Rebuilding both on
+    // every compile keeps repeated calls with different kernels independent.
+    std::unique_ptr<exprtk::symbol_table<mpreal>> symbol_table;
+    std::unique_ptr<exprtk::expression<mpreal>> expression;
+    std::unique_ptr<exprtk::parser<mpreal>> parser;
 
     std::mutex eval_mutex;
 
 public:
     bool compile() {
-        symbol_table.add_variable("t", time);
-        symbol_table.add_constants();
-        expression.register_symbol_table(symbol_table);
-        return parser.compile(config.kernel, expression);
+        symbol_table = std::make_unique<exprtk::symbol_table<mpreal>>();
+        expression = std::make_unique<exprtk::expression<mpreal>>();
+        parser = std::make_unique<exprtk::parser<mpreal>>();
+
+        symbol_table->add_variable("t", time);
+        symbol_table->add_constants();
+        expression->register_symbol_table(*symbol_table);
+        return parser->compile(config.kernel, *expression);
     }
 
     mpreal value(const mpreal& t) {
         std::scoped_lock lock(eval_mutex);
         time = t;
-        return expression.value();
+        return expression->value();
     }
 };
 
@@ -231,6 +242,10 @@ class Integrand {
 public:
     explicit Integrand(const int J)
         : j(J) {}
+
+    // Kernel samples only depend on the current run, so the cache must not
+    // leak into subsequent calls made from the Python bindings.
+    static void clear() { value.clear(); }
 
     mpreal operator()(const int i, const mpreal& r) const {
         if(value.find(i) == value.end()) value.insert(std::make_pair(i, kernel.value(-config.max_exponent * log((ONE + cos(r)) >> 1))));
@@ -281,12 +296,12 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
     for(auto I = 0; I < W.size(); ++I) W(I) = (ONE <<= 2);
 
     // step 3
-    std::cout << "[2/6] Solving Lyapunov equation...\n";
+    if(config.verbose) std::cout << "[2/6] Solving Lyapunov equation...\n";
     const mat S = lyap(A, lyap_rhs(B)).llt().matrixL();
     const mat L = lyap(A, lyap_rhs(C)).llt().matrixL();
 
     // step 4
-    std::cout << "[3/6] Solving SVD...\n";
+    if(config.verbose) std::cout << "[3/6] Solving SVD...\n";
     const auto SVD = Eigen::BDCSVD<mat, Eigen::ComputeFullU>(S.transpose() * W.asDiagonal() * L);
     const auto& U = SVD.matrixU();
     const auto& SIG = SVD.singularValues();
@@ -297,8 +312,8 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
 
     // step 7
     const auto P = pos(SIG);
-    std::cout << "[4/6] Transforming (P=" << P << ")...\n";
-    if(P == SIG.size()) std::cout << "WARNING: No singular value is smaller than the given tolerance.\n";
+    if(config.verbose) std::cout << "[4/6] Transforming (P=" << P << ")...\n";
+    if(P == SIG.size()) std::cerr << "WARNING: No singular value is smaller than the given tolerance.\n";
 
     // step 5
     auto SS = SIG;
@@ -306,7 +321,7 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
         if(SS(I) > std::numeric_limits<mpreal>::epsilon())
             SS(I) = pow(SS(I), -.5);
         else {
-            std::cout << "WARNING: Need to increase digits.\n";
+            std::cerr << "WARNING: Need to increase digits.\n";
             SS(I) = pow(std::numeric_limits<mpreal>::epsilon(), -.5);
         }
 
@@ -315,7 +330,7 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
     const auto LUT = T.fullPivLu();
 
     // step 6
-    std::cout << "[5/6] Solving eigen decomposition...\n";
+    if(config.verbose) std::cout << "[5/6] Solving eigen decomposition...\n";
     const auto EIGEN = Eigen::EigenSolver<mat>(LUT.solve(A.asDiagonal() * T).block(0, 0, P, P));
     // step 8
     const auto X = EIGEN.eigenvectors();
@@ -377,14 +392,17 @@ std::vector<long> sort_index(const cx_vec& v) {
 }
 
 std::tuple<cx_vec, cx_vec> vpmr() {
+    Integrand::clear();
+
     const auto quad = Quadrature(config.quadrature_order);
 
     vec W = vec::Zero(2 * config.max_terms);
     for(auto I = 0; I < W.size();) {
         W(I) = weight(quad, I);
-        std::cout << "\r[1/6] Computing weights... [" << ++I << '/' << W.size() << ']' << std::flush;
+        if(config.verbose) std::cout << "\r[1/6] Computing weights... [" << ++I << '/' << W.size() << ']' << std::flush;
+        else ++I;
     }
-    std::cout << std::showpos << std::setprecision(16) << '\n';
+    if(config.verbose) std::cout << std::showpos << std::setprecision(16) << '\n';
 
     if(config.print_weight) {
         std::cout << "W = \n";
@@ -409,7 +427,7 @@ std::tuple<cx_vec, cx_vec> vpmr() {
                 break;
             }
 
-    std::cout << "[6/6] Done with " << ID.size() << " final terms.\n\n";
+    if(config.verbose) std::cout << "[6/6] Done with " << ID.size() << " final terms.\n\n";
 
     if(abs(W(0)) < config.tolerance) return std::make_tuple(M(ID), -S(ID));
 
@@ -429,11 +447,12 @@ int print_helper() {
     std::cout << "Options:\n\n";
     std::cout << "    -n, --max-terms             <int>     number of terms (default: 20)\n";
     std::cout << "    -c, --max-exponent          <int>     maximum exponent (default: 4)\n";
-    std::cout << "    -d, --precision-bits        <int>     number of precision bits (default: 512)\n";
+    std::cout << "    -d, --precision-bits        <int>     number of precision bits (default: automatic)\n";
     std::cout << "    -q, --quadrature-order      <int>     quadrature order (default: 500)\n";
     std::cout << "    -m, --precision-multiplier  <float>   precision multiplier (default: 1.05)\n";
     std::cout << "    -e, --tolerance             <float>   tolerance (default: 1E-8)\n";
-    std::cout << "    -k, --kernel                <string>  file name of kernel function (default uses: exp(-t^2/4))\n";
+    std::cout << "    -k, --kernel                <string>  file name of kernel function (default uses: exp(-t*t/4))\n";
+    std::cout << "        --no-omit                         do not omit trivial terms\n";
     std::cout << "    -s, --singular-values                 print singular values\n";
     std::cout << "    -w, --weights                         print weights\n";
     std::cout << "    -h, --help                            print this help message\n\n";
@@ -548,7 +567,14 @@ int main(const int argc, const char** argv) {
 #include <pybind11/stl.h>
 
 std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>> vpmr_wrapper(
-    const int n, const int c, const int d, const int q, const double m, const double e, const std::string& k, const bool omit) {
+    const int n, const int c, const int d, const int q, const double m, const double e, const std::string& k, const bool omit, const bool verbose) {
+    // The algorithm keeps its configuration and caches in globals. Serialize
+    // calls and reset the configuration so successive Python calls cannot
+    // influence one another.
+    static std::mutex run_mutex;
+    const std::scoped_lock lock(run_mutex);
+
+    config = Config{};
     config.max_terms = std::max(1, n);
     config.max_exponent = std::max(1, c);
     config.precision_bits = std::max(1, d);
@@ -556,6 +582,7 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
     config.precision_multiplier = std::max(1.05, m);
     config.tolerance = mpreal(e);
     config.omit_trivial_terms = omit;
+    config.verbose = verbose;
     if(!k.empty()) config.kernel = k;
 
     // check size
@@ -567,7 +594,8 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
     if(0 == d)
         config.precision_bits = comb_digit;
     else if(comb_digit >= config.precision_bits) {
-        std::cout << "WARNING: Too few digits to hold combinatorial number, resetting digits to " << comb_digit << ".\n";
+        if(config.verbose)
+            std::cerr << "WARNING: Too few digits to hold combinatorial number, resetting digits to " << comb_digit << ".\n";
         config.precision_bits = comb_digit;
     }
 
@@ -581,17 +609,13 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
 
     config.tolerance /= 2;
 
-    std::vector<std::complex<double>> mm, ss;
-
-    if(!kernel.compile()) {
-        std::cerr << "Cannot compile kernel function: " << config.kernel << ".\n";
-        return {mm, ss};
-    }
+    if(!kernel.compile()) throw std::runtime_error("Cannot compile kernel function: " + config.kernel);
 
     config.print();
 
     const auto [M, S] = vpmr();
 
+    std::vector<std::complex<double>> mm, ss;
     for(const auto& I : M) mm.emplace_back(I.real().toDouble(), I.imag().toDouble());
     for(const auto& I : S) ss.emplace_back(I.real().toDouble(), I.imag().toDouble());
 
@@ -610,10 +634,11 @@ PYBIND11_MODULE(_pyvpmr, m) {
         ":param q: quadrature order (default: 500)\n"
         ":param m: precision multiplier (default: 1.05)\n"
         ":param e: tolerance (default: 1E-8)\n"
-        ":param k: kernel function (default: exp(-t^2/4))\n"
+        ":param k: kernel expression (default: exp(-t*t/4))\n"
         ":param omit: omit trivial terms (default: True)\n"
-        ":return: M, S\n",
+        ":param verbose: print progress information (default: True)\n"
+        ":return: (M, S)\n",
         pybind11::call_guard<pybind11::gil_scoped_release>(),
-        pybind11::kw_only(), pybind11::arg("n") = 20, pybind11::arg("c") = 4, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 1.05, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "", pybind11::arg("omit") = true);
+        pybind11::kw_only(), pybind11::arg("n") = 20, pybind11::arg("c") = 4, pybind11::arg("d") = 0, pybind11::arg("q") = 500, pybind11::arg("m") = 1.05, pybind11::arg("e") = 1E-8, pybind11::arg("k") = "", pybind11::arg("omit") = true, pybind11::arg("verbose") = true);
 }
 #endif

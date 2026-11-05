@@ -33,9 +33,9 @@ jobs:
         with:
           python-version: "3.11"
       - name: Build
-        run: pip install --verbose .
+        run: pip install --verbose . pytest
       - name: Test
-        run: python3 test/test.py
+        run: python3 -m pytest -q
       - name: Upload
         uses: codecov/codecov-action@v7
         with:

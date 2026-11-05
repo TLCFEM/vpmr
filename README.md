@@ -105,17 +105,139 @@ The execution of the algorithm always requires available `gmp`, `mpfr` and `tbb`
 ```python
 import numpy as np
 
-from pyvpmr import vpmr, plot
+from pyvpmr import evaluate, plot, vpmr
 
 
 def kernel(x):
-    return np.exp(-x ** 2 / 4)
+    return np.exp(-(x**2) / 4)
 
 
-if __name__ == '__main__':
-    m, s = vpmr(n=50, k='exp(-t^2/4)')
-    plot(m, s, kernel)
+if __name__ == "__main__":
+    result = vpmr(n=50, k="exp(-t*t/4)")
+
+    # The result is a named tuple, so both styles are valid:
+    #   m, s = result
+    #   result.m, result.s
+    approximation = evaluate(result.m, result.s, np.linspace(0, 10, 401))
+
+    plot(result.m, result.s, kernel)
 ```
+
+#### Python API
+
+`pyvpmr` exposes the algorithm through a small, typed API.
+
+##### `vpmr(...)`
+
+```python
+from pyvpmr import vpmr
+
+result = vpmr(
+    n=20,          # maximum number of terms
+    c=4,           # maximum exponent
+    d=0,           # precision bits, 0 selects the required precision
+    q=500,         # Gauss-Legendre quadrature order
+    m=1.05,        # precision multiplier
+    e=1e-8,        # tolerance
+    k="",          # kernel expression in t, empty uses exp(-t*t/4)
+    omit=True,     # omit numerically trivial terms
+    verbose=False, # print progress information
+)
+```
+
+The return value is a `VPMRResult`, a named tuple of two complex NumPy arrays.
+Unpacking is unchanged from earlier versions:
+
+```python
+m, s = vpmr(n=50)
+```
+
+Both arrays satisfy
+
+$$
+g(t)\approx\sum_j m_j\exp(-s_jt).
+$$
+
+The Python function validates its arguments and raises `TypeError` or
+`ValueError` for invalid input. An invalid kernel expression raises
+`RuntimeError`. Progress output is disabled by default; pass `verbose=True`
+to see the effective parameters and the progress of each step.
+
+##### Evaluating an approximation
+
+```python
+import numpy as np
+
+from pyvpmr import evaluate, vpmr
+
+result = vpmr(n=50)
+t = np.linspace(0, 10, 401)
+y = evaluate(result.m, result.s, t)
+```
+
+`evaluate` accepts a scalar or an array and returns a complex scalar or array.
+The approximation can be compared with a reference kernel:
+
+```python
+error = np.abs(np.exp(-(t**2) / 4) - y)
+```
+
+##### Plotting
+
+```python
+from pyvpmr import plot, vpmr
+
+result = vpmr(n=50)
+fig, ax, error_ax = plot(
+    result.m,
+    result.s,
+    lambda t: np.exp(-(t**2) / 4),
+    xlim=(0, 10),
+    show=False,
+    save_to="approximation.png",
+)
+```
+
+`plot` lazily imports Matplotlib and returns the figure and both axes so that
+the result can be customized further. `Matplotlib` is still a regular
+dependency, so no extra installation step is needed.
+
+##### Parsing standalone output
+
+`split` converts the textual `M` and `S` blocks printed by the standalone
+binary into arrays:
+
+```python
+from pyvpmr import split
+
+result = split(open("vpmr-output.txt").read())
+```
+
+##### Damping commands for suanPan
+
+The `to_global_damping` and `to_elemental_damping` helpers generate suanPan
+commands from the approximation. They accept either `(m, s)`, `((m, s),)`, or
+a single `VPMRResult`:
+
+```python
+from pyvpmr import to_elemental_damping, to_global_damping, vpmr
+
+result = vpmr(n=60)
+print(to_global_damping(result))
+print(to_elemental_damping(result.m, result.s))
+```
+
+##### Running the tests
+
+After installing the package, run the Python test suite with `pytest`:
+
+```bash
+pip install pytest
+python -m pytest
+```
+
+The API-level tests run without the compiled extension; tests that exercise
+the numerical core are skipped automatically when `_pyvpmr` is unavailable.
 
 ### Standalone Binary
 
@@ -126,13 +248,14 @@ Usage: vpmr [options]
 
 Options:
 
-    -n, --max-terms             <int>     number of terms (default: 10)
+    -n, --max-terms             <int>     number of terms (default: 20)
     -c, --max-exponent          <int>     maximum exponent (default: 4)
-    -d, --precision-bits        <int>     number of precision bits (default: 512)
+    -d, --precision-bits        <int>     number of precision bits (default: automatic)
     -q, --quadrature-order      <int>     quadrature order (default: 500)
     -m, --precision-multiplier  <float>   precision multiplier (default: 1.05)
     -e, --tolerance             <float>   tolerance (default: 1E-8)
-    -k, --kernel                <string>  file name of kernel function (default uses: exp(-t^2/4))
+    -k, --kernel                <string>  file name of kernel function (default uses: exp(-t*t/4))
+        --no-omit                         do not omit trivial terms
     -s, --singular-values                 print singular values
     -w, --weights                         print weights
     -h, --help                            print this help message
