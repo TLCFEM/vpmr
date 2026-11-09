@@ -18,6 +18,7 @@ classifiers = [
 dependencies = ["numpy", "matplotlib"]
 description = "The VPMR Algorithm"
 dynamic = ["readme"]
+optional-dependencies = { test = ["pytest"] }
 keywords = ["vpmr", "kernel function", "convolution"]
 license = "GPL-3.0-or-later"
 license-files = ["LICENSE"]
@@ -34,9 +35,12 @@ name = "Theodore Chang"
 email = "tlcfem@gmail.com"
 
 [project.urls]
-"Bug Reports" = "https://github.com/TLCFEM/vpmr/issuess"
+"Bug Reports" = "https://github.com/TLCFEM/vpmr/issues"
 Homepage = "https://github.com/TLCFEM/vpmr"
 Source = "https://github.com/TLCFEM/vpmr"
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
 
 [tool.cibuildwheel]
 archs = ["auto64"]

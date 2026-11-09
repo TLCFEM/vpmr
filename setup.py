@@ -113,4 +113,5 @@ setup(
     cmdclass={"build_ext": build_ext},
     zip_safe=False,
     packages=["pyvpmr"],
+    package_data={"pyvpmr": ["py.typed"]},
 )

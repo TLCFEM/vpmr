@@ -15,4 +15,13 @@
 
 from pyvpmr import vpmr
 
-print(vpmr(n=20))
+
+def main() -> None:
+    result = vpmr(n=20, verbose=True)
+    assert result.m.shape == result.s.shape
+    assert result.m.size > 0
+    print(result)
+
+
+if __name__ == "__main__":
+    main()
