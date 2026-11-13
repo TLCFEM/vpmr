@@ -241,6 +241,17 @@ def test_vpmr_omission_keeps_terms_above_tolerance():
 
 
 @requires_extension
+def test_vpmr_approximates_a_second_kernel():
+    # Validate the full pipeline for a kernel other than the default one, so
+    # quadrature and moment generation are not tuned to a single expression.
+    result = vpmr(n=20, q=500, k="exp(-t*t/9)", verbose=False)
+    t = np.linspace(0.0, 10.0, 401)
+    error = np.abs(np.exp(-(t**2) / 9.0) - evaluate(result.m, result.s, t))
+
+    assert error.max() < 1e-6
+
+
+@requires_extension
 def test_vpmr_invalid_kernel_raises_runtime_error():
     with pytest.raises(RuntimeError):
         vpmr(n=4, q=40, k="this is not an expression", verbose=False)

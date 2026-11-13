@@ -23,7 +23,6 @@
 #include <mutex>
 #include <numeric>
 #include <stdexcept>
-#include <tbb/concurrent_unordered_map.h>
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_reduce.h>
 #include "Eigen/Core"
@@ -71,38 +70,61 @@ mpreal MP_PI_HALF{MP_PI / 2};
 class Quadrature {
     class LegendrePolynomial {
         class Evaluation {
-            const mpreal ONE = mpreal(1, config.precision_bits);
-            const mpreal TWO = mpreal(2, config.precision_bits);
-
             const size_t degree;
 
             mpreal _x, _v, _d;
+            // Reused work buffers avoid allocating several MPFR temporaries
+            // for every term of the Legendre recurrence.
+            mpreal _p0, _p1, _p2, _tmp;
 
         public:
             explicit Evaluation(const mpreal& X, const size_t D)
                 : degree(D)
                 , _x(X)
                 , _v(1, config.precision_bits)
-                , _d(0, config.precision_bits) { this->evaluate(X); }
+                , _d(0, config.precision_bits)
+                , _p0(1, config.precision_bits)
+                , _p1(X)
+                , _p2(0, config.precision_bits)
+                , _tmp(0, config.precision_bits) { this->evaluate(X); }
 
             void evaluate(const mpreal& x) {
                 this->_x = x;
 
-                mpreal left{x}, right{1, config.precision_bits};
+                // P_0 = 1, P_1 = x, (i)P_i = (2i - 1)xP_{i-1} - (i - 1)P_{i-2}
+                this->_p0 = 1;
+                this->_p1 = x;
 
                 for(size_t i = 2; i <= degree; ++i) {
-                    this->_v = ((TWO * i - ONE) * x * left - (i - ONE) * right) / i;
+                    this->_p2 = this->_p1;
+                    this->_p2 *= x;
+                    this->_p2 *= 2 * i - 1;
 
-                    right = left;
-                    left = this->_v;
+                    this->_tmp = this->_p0;
+                    this->_tmp *= i - 1;
+
+                    this->_p2 -= this->_tmp;
+                    this->_p2 /= i;
+
+                    this->_p0 = this->_p1;
+                    this->_p1 = this->_p2;
                 }
 
-                this->_d = degree / (x * x - ONE) * (x * this->_v - right);
+                this->_v = this->_p1;
+
+                this->_d = this->_v;
+                this->_d *= x;
+                this->_d -= this->_p0;
+                this->_d *= degree;
+                this->_tmp = x;
+                this->_tmp *= x;
+                this->_tmp -= 1;
+                this->_d /= this->_tmp;
             }
 
-            [[nodiscard]] mpreal v() const { return this->_v; }
-            [[nodiscard]] mpreal d() const { return this->_d; }
-            [[nodiscard]] mpreal x() const { return this->_x; }
+            [[nodiscard]] const mpreal& v() const { return this->_v; }
+            [[nodiscard]] const mpreal& d() const { return this->_d; }
+            [[nodiscard]] const mpreal& x() const { return this->_x; }
         };
 
         static tbb::affinity_partitioner ap;
@@ -137,10 +159,14 @@ class Quadrature {
             tbb::parallel_for(degree / 2, degree, [&](const size_t i) {
             this->_r[i] = -this->_r[degree - i - 1];
             this->_w[i] = this->_w[degree - i - 1]; }, ap);
+
+            // Map the roots from [-1, 1] to the quadrature interval [0, pi]
+            // once instead of repeating the affine transform for every moment.
+            for(size_t i = 0; i < degree; ++i) this->_r[i] = MP_PI_HALF * this->_r[i] + MP_PI_HALF;
         }
 
-        [[nodiscard]] mpreal root(const int i) const { return this->_r[i]; }
-        [[nodiscard]] mpreal weight(const int i) const { return this->_w[i]; }
+        [[nodiscard]] const mpreal& node(const int i) const { return this->_r[i]; }
+        [[nodiscard]] const mpreal& weight(const int i) const { return this->_w[i]; }
     };
 
     LegendrePolynomial poly;
@@ -149,11 +175,14 @@ public:
     explicit Quadrature(const size_t D)
         : poly(D) {}
 
+    [[nodiscard]] size_t size() const { return poly.degree; }
+    [[nodiscard]] const mpreal& node(const int i) const { return poly.node(i); }
+
     template<typename Function> mpreal integrate(Function&& f) const {
         return tbb::parallel_deterministic_reduce(
             tbb::blocked_range(0, static_cast<int>(poly.degree)), mpreal(0, config.precision_bits),
             [&](const tbb::blocked_range<int>& r, mpreal running_total) {
-                for(auto i = r.begin(); i < r.end(); ++i) running_total += poly.weight(i) * f(i, MP_PI_HALF * poly.root(i) + MP_PI_HALF);
+                for(auto i = r.begin(); i < r.end(); ++i) running_total += poly.weight(i) * f(i, poly.node(i));
                 return running_total;
             },
             std::plus<>());
@@ -191,9 +220,9 @@ Cache<big_int, unsigned, unsigned> comb(comb_impl);
 
 // recursive implementation of combinatorial number calculation
 big_int comb_impl(unsigned n, unsigned k) {
+    if(k > n) return {0};
     if(k == 0 || k == n) return {1};
     if(k == 1 || k == n - 1) return {n};
-    if(k > n) return {0};
     if(2 * k > n) k = n - k;
 
     return comb(n - 1, k - 1) + comb(n - 1, k);
@@ -240,30 +269,6 @@ public:
 };
 
 Expression kernel{};
-
-// integrand in eq. 2.2 --- K(t)cos(jt)
-class Integrand {
-    static tbb::concurrent_unordered_map<int, mpreal> value;
-
-    const mpreal ONE = mpreal(1, config.precision_bits);
-
-    const int j;
-
-public:
-    explicit Integrand(const int J)
-        : j(J) {}
-
-    // Kernel samples only depend on the current run, so the cache must not
-    // leak into subsequent calls made from the Python bindings.
-    static void clear() { value.clear(); }
-
-    mpreal operator()(const int i, const mpreal& r) const {
-        if(value.find(i) == value.end()) value.insert(std::make_pair(i, kernel.value(-config.max_exponent * log((ONE + cos(r)) >> 1))));
-        return value[i] * cos(j * r);
-    }
-};
-
-tbb::concurrent_unordered_map<int, mpreal> Integrand::value(100);
 
 using mat = Eigen::Matrix<mpreal, Eigen::Dynamic, Eigen::Dynamic>;
 using vec = Eigen::Matrix<mpreal, Eigen::Dynamic, 1>;
@@ -411,16 +416,20 @@ std::vector<long> sort_index(const cx_vec& v) {
 }
 
 std::tuple<cx_vec, cx_vec> vpmr() {
-    Integrand::clear();
-
     const auto quad = Quadrature(config.quadrature_order);
+
+    // The kernel only depends on the quadrature node, so sample it once
+    // instead of maintaining a global cache across calls and moments.
+    const mpreal ONE = mpreal(1, config.precision_bits);
+    std::vector<mpreal> sample(quad.size());
+    for(size_t I = 0; I < sample.size(); ++I) sample[I] = kernel.value(-config.max_exponent * log((ONE + cos(quad.node(I))) >> 1));
 
     // The moments only depend on the kernel and quadrature rule. Computing
     // them once avoids repeating the same O(q) quadrature for every weight.
     const auto moment_count = 2 * config.max_terms;
     std::vector<mpreal> k_hat(moment_count);
     for(auto I = 0; I < moment_count; ++I) {
-        k_hat[I] = quad.integrate(Integrand(I));
+        k_hat[I] = quad.integrate([&](const int i, const mpreal& r) { return sample[i] * cos(mpreal(I, config.precision_bits) * r); });
         if(config.verbose) std::cout << "\r[1/6] Computing weights... [" << I + 1 << '/' << moment_count << ']' << std::flush;
     }
     if(config.verbose) std::cout << std::showpos << std::setprecision(16) << '\n';
