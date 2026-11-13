@@ -15,6 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ******************************************************************************/
 
+#include <algorithm>
 #include <gmpxx.h>
 #include <iomanip>
 #include <memory>
@@ -198,6 +199,15 @@ big_int comb_impl(unsigned n, unsigned k) {
     return comb(n - 1, k - 1) + comb(n - 1, k);
 }
 
+// Estimate the number of bits needed to represent the largest binomial
+// coefficient exactly. Use GMP's bit-length query instead of repeatedly
+// dividing a big integer by two.
+int estimate_precision_bits(const int max_terms, const double multiplier) {
+    const auto comb_max = comb(4 * max_terms, 2 * max_terms);
+    const auto comb_bits = static_cast<int>(mpz_sizeinbase(comb_max.get_mpz_t(), 2));
+    return std::max(64, static_cast<int>(std::max(1.5, multiplier) * static_cast<double>(comb_bits + 4 * max_terms)));
+}
+
 // kernel function
 class Expression {
     mpreal time;
@@ -342,17 +352,23 @@ std::tuple<cx_vec, cx_vec> model_reduction(const vec& A, const vec& B, const vec
     return std::make_tuple(X.fullPivLu().solve(BB).cwiseProduct(CC), EIGEN.eigenvalues());
 }
 
-mpreal weight(const Quadrature& quad, const int j) {
-    auto k_hat = [&quad](const int l) { return quad.integrate(Integrand(l)); };
+mpreal weight(const std::vector<mpreal>& k_hat, const int j) {
     auto sgn_bit = [](const int l) { return l % 2 == 0 ? 1 : -1; };
 
     const auto N = config.max_terms;
     const auto D = config.precision_bits;
 
+    // Convert exact binomial coefficients directly from GMP integers. Going
+    // through decimal strings loses the benefit of both libraries.
+    auto binom = [D](const unsigned n, const unsigned k) {
+        const auto value = comb(n, k);
+        return mpreal(value.get_mpz_t(), D);
+    };
+
     if(0 == j) {
-        mpreal result = k_hat(0) / 2;
-        for(auto l = 1; l <= N; ++l) result += sgn_bit(l) * k_hat(l);
-        for(auto l = 1; l < N; ++l) result += sgn_bit(N + l) * mpreal(N - l, D) / mpreal(N, D) * k_hat(N + l);
+        mpreal result = k_hat[0] / 2;
+        for(auto l = 1; l <= N; ++l) result += sgn_bit(l) * k_hat[l];
+        for(auto l = 1; l < N; ++l) result += sgn_bit(N + l) * mpreal(N - l, D) / mpreal(N, D) * k_hat[N + l];
         return result;
     }
 
@@ -361,15 +377,14 @@ mpreal weight(const Quadrature& quad, const int j) {
     if(j > N) {
         for(auto l = j - N; l < N; ++l)
             result += sgn_bit(N + l - j) * mpreal((N - l) * (N + l), D) / mpreal(N * (N + l + j), D) *
-                mpreal(comb(N + l + j, N + l - j).get_str(), D) * k_hat(N + l);
+                binom(N + l + j, N + l - j) * k_hat[N + l];
     }
     else {
         for(auto l = j; l <= N; ++l)
-            result += sgn_bit(l - j) * mpreal(l, D) / mpreal(l + j, D) *
-                mpreal(comb(l + j, l - j).get_str(), D) * k_hat(l);
+            result += sgn_bit(l - j) * mpreal(l, D) / mpreal(l + j, D) * binom(l + j, l - j) * k_hat[l];
         for(auto l = 1; l < N; ++l)
             result += sgn_bit(N + l - j) * mpreal((N - l) * (N + l), D) / mpreal(N * (N + l + j), D) *
-                mpreal(comb(N + l + j, N + l - j).get_str(), D) * k_hat(N + l);
+                binom(N + l + j, N + l - j) * k_hat[N + l];
     }
 
     // unlike the original paper, we do not multiply 4^j here
@@ -381,11 +396,15 @@ std::vector<long> sort_index(const cx_vec& v) {
     std::vector<long> idx(v.size());
     std::iota(idx.begin(), idx.end(), 0);
 
-    std::stable_sort(idx.begin(), idx.end(), [&v](const long i, const long j) {
-        const auto value_i = norm(v(i)).toDouble(), value_j = norm(v(j)).toDouble();
-        if(value_i > value_j) return true;
-        if(value_i < value_j) return false;
-        return v(i).imag() > 0;
+    // Keep the comparison in MPFR. Converting to double here discards the
+    // working precision and can turn large coefficients into infinities.
+    std::vector<mpreal> magnitude(v.size());
+    for(auto I = 0; I < v.size(); ++I) magnitude[I] = norm(v(I));
+
+    std::stable_sort(idx.begin(), idx.end(), [&v, &magnitude](const long i, const long j) {
+        if(magnitude[i] > magnitude[j]) return true;
+        if(magnitude[i] < magnitude[j]) return false;
+        return v(i).imag() > v(j).imag();
     });
 
     return idx;
@@ -396,13 +415,18 @@ std::tuple<cx_vec, cx_vec> vpmr() {
 
     const auto quad = Quadrature(config.quadrature_order);
 
-    vec W = vec::Zero(2 * config.max_terms);
-    for(auto I = 0; I < W.size();) {
-        W(I) = weight(quad, I);
-        if(config.verbose) std::cout << "\r[1/6] Computing weights... [" << ++I << '/' << W.size() << ']' << std::flush;
-        else ++I;
+    // The moments only depend on the kernel and quadrature rule. Computing
+    // them once avoids repeating the same O(q) quadrature for every weight.
+    const auto moment_count = 2 * config.max_terms;
+    std::vector<mpreal> k_hat(moment_count);
+    for(auto I = 0; I < moment_count; ++I) {
+        k_hat[I] = quad.integrate(Integrand(I));
+        if(config.verbose) std::cout << "\r[1/6] Computing weights... [" << I + 1 << '/' << moment_count << ']' << std::flush;
     }
     if(config.verbose) std::cout << std::showpos << std::setprecision(16) << '\n';
+
+    vec W = vec::Zero(moment_count);
+    for(auto I = 0; I < W.size(); ++I) W(I) = weight(k_hat, I);
 
     if(config.print_weight) {
         std::cout << "W = \n";
@@ -420,12 +444,13 @@ std::tuple<cx_vec, cx_vec> vpmr() {
     auto [M, S] = model_reduction(A, B, C);
 
     auto ID = sort_index(M);
-    if(config.omit_trivial_terms)
-        for(int I = static_cast<int>(ID.size()) - 1; I >= 0; --I)
-            if(norm(M(ID[I])) > config.tolerance) {
-                ID.erase(ID.begin() + I + 1, ID.end());
-                break;
-            }
+    if(config.omit_trivial_terms) {
+        // The coefficients are sorted by descending magnitude. The old code
+        // compared the squared magnitude with a linear tolerance, which removed
+        // terms that were actually larger than the tolerance.
+        const auto first = std::find_if(ID.begin(), ID.end(), [&M](const long I) { return abs(M(I)) <= config.tolerance; });
+        ID.erase(first, ID.end());
+    }
 
     if(config.verbose) std::cout << "[6/6] Done with " << ID.size() << " final terms.\n\n";
 
@@ -469,6 +494,7 @@ int main(const int argc, const char** argv) {
     const auto start = std::chrono::high_resolution_clock::now();
 
     bool has_digit = false;
+    std::string tolerance_string{"1E-8"};
     for(auto I = 1; I < argc; ++I) {
         if(const auto token = std::string(argv[I]); token == "-n" || token == "--max-terms")
             config.max_terms = std::max(1, std::stoi(argv[++I]));
@@ -483,7 +509,7 @@ int main(const int argc, const char** argv) {
         else if(token == "-m" || token == "--precision-multiplier")
             config.precision_multiplier = std::max(1.5, std::stod(argv[++I]));
         else if(token == "-e" || token == "--tolerance")
-            config.tolerance = mpreal(argv[++I]);
+            tolerance_string = argv[++I];
         else if(token == "-k" || token == "--kernel") {
             const std::string file_name(argv[++I]);
             std::ifstream file(file_name);
@@ -511,10 +537,7 @@ int main(const int argc, const char** argv) {
     }
 
     // check size
-    big_int comb_max = comb(4 * config.max_terms, 2 * config.max_terms);
-    int comb_digit = 1;
-    while((comb_max /= 2) > 0) ++comb_digit;
-    comb_digit = std::max(64, static_cast<int>(std::max(1.5, config.precision_multiplier) * static_cast<double>(comb_digit + 4 * config.max_terms)));
+    const auto comb_digit = estimate_precision_bits(config.max_terms, config.precision_multiplier);
 
     if(!has_digit)
         config.precision_bits = comb_digit;
@@ -526,7 +549,8 @@ int main(const int argc, const char** argv) {
     // set precision
     mpreal::set_default_prec(config.precision_bits);
 
-    config.tolerance.setPrecision(config.precision_bits);
+    // Parse the tolerance only once the working precision is known.
+    config.tolerance = mpreal(tolerance_string, config.precision_bits);
 
     MP_PI = const_pi(config.precision_bits);
     MP_PI_HALF = MP_PI / 2;
@@ -580,16 +604,12 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
     config.precision_bits = std::max(1, d);
     config.quadrature_order = std::max(1, q);
     config.precision_multiplier = std::max(1.05, m);
-    config.tolerance = mpreal(e);
     config.omit_trivial_terms = omit;
     config.verbose = verbose;
     if(!k.empty()) config.kernel = k;
 
     // check size
-    big_int comb_max = comb(4 * config.max_terms, 2 * config.max_terms);
-    int comb_digit = 1;
-    while((comb_max /= 2) > 0) ++comb_digit;
-    comb_digit = std::max(64, static_cast<int>(std::max(1.5, config.precision_multiplier) * static_cast<double>(comb_digit + 4 * config.max_terms)));
+    const auto comb_digit = estimate_precision_bits(config.max_terms, config.precision_multiplier);
 
     if(0 == d)
         config.precision_bits = comb_digit;
@@ -602,7 +622,8 @@ std::tuple<std::vector<std::complex<double>>, std::vector<std::complex<double>>>
     // set precision
     mpreal::set_default_prec(config.precision_bits);
 
-    config.tolerance.setPrecision(config.precision_bits);
+    // Parse the tolerance only once the working precision is known.
+    config.tolerance = mpreal(e, config.precision_bits);
 
     MP_PI = const_pi(config.precision_bits);
     MP_PI_HALF = MP_PI / 2;
