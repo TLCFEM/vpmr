@@ -1,106 +1,125 @@
-# VPMR C++ Implementation
+<div align="center">
 
-<img src="resource/vpmr.svg" width="150" align="middle"/>
+<img src="resource/vpmr.svg" width="140" alt="VPMR logo"/>
+
+# VPMR
+
+**Approximate any smooth kernel as a sum of exponentials.**
+
+*Parallel · arbitrary precision · C++17 core · Python bindings · CLI · Docker*
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7770193.svg)](https://doi.org/10.5281/zenodo.7770193)
 [![codecov](https://codecov.io/gh/TLCFEM/vpmr/branch/master/graph/badge.svg?token=9QE6SQC3ZG)](https://codecov.io/gh/TLCFEM/vpmr)
 [![PyPI version](https://badge.fury.io/py/pyvpmr.svg)](https://pypi.org/project/pyvpmr/)
 [![Docker](https://img.shields.io/docker/image-size/tlcfem/vpmr/latest)](https://hub.docker.com/r/tlcfem/vpmr/tags)
+[![GitHub stars](https://img.shields.io/github/stars/TLCFEM/vpmr?style=flat)](https://github.com/TLCFEM/vpmr/stargazers)
+[![License: GPL v3+](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
-[![gplv3-or-later](https://www.gnu.org/graphics/gplv3-or-later.svg)](https://www.gnu.org/licenses/gpl-3.0.en.html)
+[Overview](#overview) · [Install](#installation) · [Quick start](#quick-start) · [Python API](#python-api) · [CLI](#command-line-interface) · [Build](#building-from-source) · [Contributing](#contributing)
 
-## Call For Help
+</div>
 
-- [ ] **more performant parallel SVD algorithm**: `eigen` only provides sequential SVD
-- [ ] **alternative integration**: currently only Gauss-Legendre quadrature is available
+---
 
-## What Is This?
+## Overview
 
-This is a C++ implementation of the VPMR algorithm to compute the approximation of arbitrary smooth kernel.
-A Python package is also provided.
-
-Check the reference paper [10.1007/s10915-022-01999-1](https://doi.org/10.1007/s10915-022-01999-1) and
-the [original](https://github.com/ZXGao97/VPMR) MATLAB implementation for more details.
-
-In short, the algorithm tries to find a summation of exponentials to approximate a given kernel function.
-In mathematical terms, it looks for a set of $m_j$ and $s_j$ such that
+VPMR finds a compact exponential sum that reproduces an arbitrary smooth kernel to a prescribed tolerance. In other words, it looks for a set of $m_j$ and $s_j$ such that
 
 $$
-\max_{t\in{}I}\left\|g(t)-\sum_jm_j\exp(-s_jt)\right\|<\epsilon.
+\max_{t\in{}I}\left\|g(t)-\sum_jm_j\exp(-s_jt)\right\|<\epsilon,
 $$
 
-In the above, $g(t)$ is the given kernel function and $\epsilon$ is the prescribed tolerance.
+where $g(t)$ is the given kernel and $\epsilon$ is the target accuracy.
 
-## Dependency
+The result is a small, closed-form approximation — ideal for convolution, damping, and other integral kernels that would otherwise be expensive to evaluate.
 
-The following libraries are required:
+> **Read more**
+> - 📄 Reference paper: [10.1007/s10915-022-01999-1](https://doi.org/10.1007/s10915-022-01999-1)
+> - 🧪 Original MATLAB implementation: [ZXGao97/VPMR](https://github.com/ZXGao97/VPMR)
 
-1. [gmp](https://gmplib.org/) for multiple precision arithmetic
-2. [mpfr](https://www.mpfr.org/) for multiple-precision floating-point computations
-3. [tbb](https://github.com/oneapi-src/oneTBB) for parallel computing
+## Highlights
 
-The following libraries are included:
+| | Feature | What it gives you |
+|---|---|---|
+| ⚡ | **Parallel by design** | TBB-backed computation with parallel SVD, so larger `n` stays practical. |
+| 🎯 | **Arbitrary precision** | GMP/MPFR arithmetic, with precision derived automatically from `n`. |
+| 🧮 | **Kernel as an expression** | Write `exp(-t*t/10)` in a text file — no recompilation needed. |
+| 🐍 | **Pythonic API** | `vpmr`, `evaluate`, `plot`, `split`, and suanPan damping helpers. |
+| 📦 | **Zero-config distribution** | Prebuilt wheels, a standalone binary, and a Docker image. |
+| 🖥️ | **Portable** | Linux, macOS, Windows via MSYS2/WSL. |
 
-1. [mpreal](http://www.holoborodko.com/pavel/mpfr/) `mpreal` type C++ wrapper, included
-2. [Eigen](https://eigen.tuxfamily.org/) for matrix decomposition, included
-3. [exprtk](https://github.com/ArashPartow/exprtk.git) for expression parsing, included
-4. [exprtk-custom-types](https://github.com/ArashPartow/exprtk-custom-types.git) for `mpreal` support, included
+## Installation
 
-## How To
+### Dependencies
 
-If the application needs to be compiled on your machine (build the binary from source, python wheels are not available, etc.), you need to install the compiler and three libraries.
+The following libraries are required at build and run time:
 
-1. On RPM-based Linux distributions (using `dnf`), you need to `sudo dnf install -y gcc-c++ tbb-devel mpfr-devel gmp-devel`.
-2. On DEB-based Linux distributions (using `apt`), you need to `sudo apt install -y g++ libtbb-dev libmpfr-dev libgmp-dev`.
-3. On macOS, you need to `brew install gcc tbb mpfr gmp`.
+| Library | Purpose |
+|---|---|
+| [gmp](https://gmplib.org/) | Multiple precision arithmetic |
+| [mpfr](https://www.mpfr.org/) | Multiple-precision floating-point computations |
+| [tbb](https://github.com/oneapi-src/oneTBB) | Parallel computing |
 
-If the binary is available (run the pre-compiled binary, python wheels are available, etc.), you only need the runtimes of three libraries.
-You can find the exact names on [pkgs.org](https://pkgs.org/) by searching `tbb`, `gmp` and `mpfr`.
+The following libraries are bundled:
+
+| Library | Purpose |
+|---|---|
+| [mpreal](http://www.holoborodko.com/pavel/mpfr/) | `mpreal` type C++ wrapper |
+| [Eigen](https://eigen.tuxfamily.org/) | Matrix decomposition |
+| [exprtk](https://github.com/ArashPartow/exprtk.git) | Expression parsing |
+| [exprtk-custom-types](https://github.com/ArashPartow/exprtk-custom-types.git) | `mpreal` support for exprtk |
+
+Install the toolchain and system libraries:
+
+```bash
+# RPM-based Linux (dnf)
+sudo dnf install -y gcc-c++ tbb-devel mpfr-devel gmp-devel
+
+# DEB-based Linux (apt)
+sudo apt install -y g++ libtbb-dev libmpfr-dev libgmp-dev
+
+# macOS (Homebrew)
+brew install gcc tbb mpfr gmp
+```
+
+If you only run a prebuilt binary or wheel, you just need the runtimes. Look up the exact package names for `tbb`, `gmp`, and `mpfr` on [pkgs.org](https://pkgs.org/).
 
 > [!WARNING]
-> Windows users need to have a working [MSYS2](https://www.msys2.org/) environment. See below for more details.
-> For other environments, you need to figure out how to install `gmp` and `mpfr` on your own.
+> Windows users need a working [MSYS2](https://www.msys2.org/) environment — see [Building from source](#building-from-source). On other platforms, install `gmp` and `mpfr` using your own package manager.
 
-### Docker
+### 🐳 Docker
 
-You can simply pull the image using the following command.
+Pull and run the image:
 
 ```bash
 docker pull tlcfem/vpmr
-# or using GitHub Container Registry
-docker pull ghcr.io/tlcfem/vmpr
-```
+# or from GitHub Container Registry
+docker pull ghcr.io/tlcfem/vpmr
 
-Just use it as you would normally do with any other docker images.
-For example,
-
-```bash
 docker run tlcfem/vpmr -n 30
 ```
 
-To build the image locally, use the provided `Dockerfile`.
+Build it locally with the provided `Dockerfile`:
 
 ```bash
 wget -q https://raw.githubusercontent.com/TLCFEM/vpmr/master/resource/Dockerfile
 docker build -t vpmr -f Dockerfile .
 ```
 
-### Python Package
+### 🐍 Python package
 
-> [!WARNING]
-> The Python module needs external libraries to be installed.
-> See above.
-
-On most platforms (Linux and macOS), wheels are available, simply install the package with `pip`.
+Wheels are available for Linux and macOS:
 
 ```bash
 pip install pyvpmr
 ```
 
-If the corresponding wheel is not available, the package will be compiled, which takes a few minutes.
-The execution of the algorithm always requires available `gmp`, `mpfr` and `tbb` libraries.
+If no wheel matches your platform, the package is compiled from source, which takes a few minutes. Running the algorithm always requires `gmp`, `mpfr`, and `tbb`.
 
-#### Jumpstart
+> [!WARNING]
+> The Python module is a binding around the native core: the external libraries above must be installed even when a wheel is used.
+
+## Quick start
 
 ```python
 import numpy as np
@@ -123,11 +142,13 @@ if __name__ == "__main__":
     plot(result.m, result.s, kernel)
 ```
 
-#### Python API
+One call gives you the coefficients; `evaluate` and `plot` let you inspect the fit.
+
+## Python API
 
 `pyvpmr` exposes the algorithm through a small, typed API.
 
-##### `vpmr(...)`
+### `vpmr(...)`
 
 ```python
 from pyvpmr import vpmr
@@ -145,8 +166,7 @@ result = vpmr(
 )
 ```
 
-The return value is a `VPMRResult`, a named tuple of two complex NumPy arrays.
-Unpacking is unchanged from earlier versions:
+The return value is a `VPMRResult`, a named tuple of two complex NumPy arrays. Unpacking works as before:
 
 ```python
 m, s = vpmr(n=50)
@@ -158,12 +178,9 @@ $$
 g(t)\approx\sum_j m_j\exp(-s_jt).
 $$
 
-The Python function validates its arguments and raises `TypeError` or
-`ValueError` for invalid input. An invalid kernel expression raises
-`RuntimeError`. Progress output is disabled by default; pass `verbose=True`
-to see the effective parameters and the progress of each step.
+Arguments are validated: invalid input raises `TypeError` or `ValueError`, and an invalid kernel expression raises `RuntimeError`. Progress output is off by default; pass `verbose=True` to see the effective parameters and each step.
 
-##### Evaluating an approximation
+### `evaluate`
 
 ```python
 import numpy as np
@@ -173,16 +190,14 @@ from pyvpmr import evaluate, vpmr
 result = vpmr(n=50)
 t = np.linspace(0, 10, 401)
 y = evaluate(result.m, result.s, t)
-```
 
-`evaluate` accepts a scalar or an array and returns a complex scalar or array.
-The approximation can be compared with a reference kernel:
-
-```python
+# Compare with the reference kernel
 error = np.abs(np.exp(-(t**2) / 4) - y)
 ```
 
-##### Plotting
+`evaluate` accepts a scalar or an array and returns a complex scalar or array.
+
+### `plot`
 
 ```python
 from pyvpmr import plot, vpmr
@@ -198,14 +213,11 @@ fig, ax, error_ax = plot(
 )
 ```
 
-`plot` lazily imports Matplotlib and returns the figure and both axes so that
-the result can be customized further. `Matplotlib` is still a regular
-dependency, so no extra installation step is needed.
+`plot` lazily imports Matplotlib and returns the figure and both axes, so the result can be customized further. Matplotlib is a regular dependency — no extra installation step.
 
-##### Parsing standalone output
+### `split`
 
-`split` converts the textual `M` and `S` blocks printed by the standalone
-binary into arrays:
+Convert the textual `M` and `S` blocks printed by the standalone binary into arrays:
 
 ```python
 from pyvpmr import split
@@ -213,11 +225,9 @@ from pyvpmr import split
 result = split(open("vpmr-output.txt").read())
 ```
 
-##### Damping commands for suanPan
+### suanPan damping commands
 
-The `to_global_damping` and `to_elemental_damping` helpers generate suanPan
-commands from the approximation. They accept either `(m, s)`, `((m, s),)`, or
-a single `VPMRResult`:
+`to_global_damping` and `to_elemental_damping` generate suanPan commands from the approximation. They accept `(m, s)`, `((m, s),)`, or a single `VPMRResult`:
 
 ```python
 from pyvpmr import to_elemental_damping, to_global_damping, vpmr
@@ -227,21 +237,16 @@ print(to_global_damping(result))
 print(to_elemental_damping(result.m, result.s))
 ```
 
-##### Running the tests
-
-After installing the package, run the Python test suite with `pytest`:
+### Running the tests
 
 ```bash
 pip install pytest
 python -m pytest
 ```
 
-The API-level tests run without the compiled extension; tests that exercise
-the numerical core are skipped automatically when `_pyvpmr` is unavailable.
+The API-level tests run without the compiled extension; tests that exercise the numerical core are skipped automatically when `_pyvpmr` is unavailable.
 
-### Standalone Binary
-
-All available options are:
+## Command-line interface
 
 ```text
 Usage: vpmr [options]
@@ -261,20 +266,28 @@ Options:
     -h, --help                            print this help message
 ```
 
-The minimum required precision can be estimated by the parameter $n$.
-The algorithm involves the computation of $C(4n,k)$ and $2^{4n}$.
-The number of precision bits shall be at least $4n+\log_2C(4n,2n)$.
-In the implementation, this number will be further multiplied by the parameter $m$.
+### Choosing the precision
 
-#### Example
+The minimum required precision is estimated from $n$: the algorithm computes $C(4n,k)$ and $2^{4n}$, so the number of precision bits should be at least
 
-The default kernel is `exp(-t^2/4)`. One can run the application with the following command:
+$$
+4n+\log_2 C(4n,2n).
+$$
+
+In the implementation, this number is further multiplied by the precision multiplier `m`.
+
+## Examples
+
+### Default kernel
+
+The default kernel is `exp(-t^2/4)`:
 
 ```bash
 ./vpmr -n 30
 ```
 
-The output is:
+<details>
+<summary><strong>Show sample output</strong></summary>
 
 ```text
 Using the following parameters:
@@ -321,25 +334,19 @@ S =
 Running time: 1987 ms.
 ```
 
+</details>
+
 ![exp(-t^2/4)](resource/example.png)
 
-#### Arbitrary Kernel
+### Arbitrary kernel
 
-For arbitrary kernel, it is necessary to provide the kernel function in a text file.
-The file should contain the kernel expressed as a function of variable `t`.
+Provide the kernel in a text file as a function of `t`. Expressions are parsed with [exprtk](https://www.partow.net/programming/exprtk/) — see its documentation for the supported syntax.
 
-The `exprtk` is used to parse the expression and compute the value.
-The provided kernel function must be valid and supported by `exprtk`.
-Check the [documentation](https://www.partow.net/programming/exprtk/) regarding how to write a valid expression.
-
-For example, to compute the approximation of `exp(-t^2/10)`, one can create a file `kernel.txt` with the following
-content:
+For example, to approximate `exp(-t^2/10)`, create `kernel.txt`:
 
 ```text
 exp(-t*t/10)
 ```
-
-In the following, the kernel function is echoed to a file and then used as an input to the application.
 
 ```bash
 echo "exp(-t*t/10)" > kernel.txt
@@ -350,21 +357,18 @@ echo "exp(-t*t/10)" > kernel.txt
 
 ## Performance
 
-The majority of the algorithm is parallelised to extract the maximum performance.
-The following is a typical performance profile on a i7-10750H platform using the `./vpmr -n 80`.
+Most of the algorithm is parallelized to extract maximum performance. Below is a typical profile on an i7-10750H with `./vpmr -n 80`:
 
 ![profiling](resource/profile.png)
 
-## Compilation
+## Building from source
 
 > [!WARNING]
-> The application relies on `eigen` and `exprtk`, which depend on very heavy usage of templates.
-> The compilation would take minutes and around 2 GB memory.
-> You need to install libraries `gmp`, `mpfr` and `tbb` before compiling.
+> The application relies on Eigen and exprtk, which use templates heavily. Compilation takes minutes and around 2 GB of memory. Install `gmp`, `mpfr`, and `tbb` first.
 
 ### Windows
 
-Use the following instructions based on [MSYS2](https://www.msys2.org/), or follow the Linux instructions below with WSL.
+Use [MSYS2](https://www.msys2.org/), or follow the Linux instructions below with WSL.
 
 ```bash
 # install necessary packages
@@ -381,7 +385,7 @@ ninja
 
 ### Linux
 
-The following is based on Fedora.
+The following is based on Fedora:
 
 ```bash
 sudo dnf install gcc g++ cmake git tbb-devel mpfr-devel gmp-devel -y
@@ -391,3 +395,24 @@ cd eigen && git apply --ignore-space-change --ignore-whitespace ../parallelize.p
 cmake -DCMAKE_BUILD_TYPE=Release .
 make
 ```
+
+## Contributing
+
+Contributions are welcome! Help is especially wanted with:
+
+- [ ] **More performant parallel SVD** — `eigen` only provides sequential SVD
+- [ ] **Alternative integration** — currently only Gauss-Legendre quadrature is available
+
+Open an [issue](https://github.com/TLCFEM/vpmr/issues) to discuss ideas, or submit a pull request.
+
+## License & citation
+
+Licensed under [GPL-3.0-or-later](https://www.gnu.org/licenses/gpl-3.0.en.html).
+
+If VPMR is useful in your work, please cite the [reference paper](https://doi.org/10.1007/s10915-022-01999-1) and archive [10.5281/zenodo.7770193](https://doi.org/10.5281/zenodo.7770193).
+
+<div align="center">
+
+**[⬆ Back to top](#vpmr)**
+
+</div>
