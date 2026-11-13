@@ -12,3 +12,4 @@ build/
 cmake-build-*/
 venv
 wheelhouse
+opencode.json
