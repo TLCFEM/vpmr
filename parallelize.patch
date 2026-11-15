@@ -116,7 +116,7 @@ index 44e720fff..9493e1a94 100644
        process_segment_tail(bool_constant<UseSegment>(), Index(UnsignedIndex(rows - i) / ResPacketSize), i, j2, jend,
                             lhs, rhs, res, palpha, pcj, count);
 diff --git a/Eigen/src/SVD/BDCSVDImpl.h b/Eigen/src/SVD/BDCSVDImpl.h
-index 0b3ddc69d..3f1d65426 100644
+index 0b3ddc69d..f6cb26a89 100644
 --- a/Eigen/src/SVD/BDCSVDImpl.h
 +++ b/Eigen/src/SVD/BDCSVDImpl.h
 @@ -433,6 +433,14 @@ typename bdcsvd_impl<RealScalar_>::RealScalar bdcsvd_impl<RealScalar_>::secularE
@@ -166,9 +166,9 @@ index 0b3ddc69d..3f1d65426 100644
 +            const RealScalar diagonal = diag(i);
 +            const RealScalar z = zhat(i);
 +            RealScalar diff = diagonal - shift;
-+            pbarrier(diff)
++            pbarrier(diff);
 +            diff -= mu;
-+            pbarrier(diff)
++            pbarrier(diff);
 +            const RealScalar sum = diagonal + singularValue;
 +            U(i, k) = sequentialQuotient(z, diff, sum);
 +            if (m_compV && l > 0) V(i, k) = sequentialQuotient(diagonal * z, diff, sum);
